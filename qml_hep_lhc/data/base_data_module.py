@@ -16,7 +16,17 @@ class BaseDataModule():
         self.y_val = None
         self.x_test = None
         self.y_test = None
+
+        # quantum data
+        self.q_dims = None
+        self.q_output_dims = None
+        self.q_mapping = None
+
+        self.qx_train = None
+        self.qx_val = None
+        self.qx_test = None
         
+
     @classmethod
     def data_dirname(cls):
         return Path(__file__).resolve().parents[2] / "datasets"
@@ -24,3 +34,7 @@ class BaseDataModule():
     def config(self):
         """Return important settings of the dataset, which will be passed to instantiate models."""
         return {"input_dims": self.dims, "output_dims": self.output_dims, "mapping": self.mapping}
+    
+    def q_data_config(self):
+        """Return important settings of the dataset, which will be passed to instantiate models."""
+        return {"input_dims": self.q_dims, "output_dims": self.q_output_dims, "mapping": self.q_mapping}
