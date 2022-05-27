@@ -2,6 +2,7 @@ from gc import callbacks
 from xmlrpc.client import boolean
 from qml_hep_lhc.data.mnist import Mnist
 from qml_hep_lhc.models.resnet.v2 import ResnetV2
+from qml_hep_lhc.models.qnn import QNN
 import tensorflow as tf
 import wandb
 import argparse
@@ -16,19 +17,22 @@ def _setup_parser():
     parser.add_argument("--normalize", action="store_true", default=False)
     parser.add_argument("--resnet-depth", type=int, default=20)
     parser.add_argument("--resize", nargs='+',type=int,default=[28,28])
+    parser.add_argument("--quantum", action="store_true", default=False)
+    parser.add_argument("--binary-encoding", action="store_true", default=False)
+    parser.add_argument("--threshold", type=float, default=0.5)
+    parser.add_argument("--binary-data", nargs='+', type=int, default=[0,1])
     return parser
 
 def main():
     parser = _setup_parser()
     args = parser.parse_args()
-    print(args.resize)
-    print(type(args.resize))
     data = Mnist(args)
     data.prepare_data()
     data.setup()
     data_config = data.config()
-    model = ResnetV2(data_config, args)
-    print(repr(data))
+    # model = ResnetV2(data_config, args)
+    model = QNN(data.q_data_config())
+    model.build_graph()
 
     callbacks = []
     if args.wandb:
@@ -38,11 +42,11 @@ def main():
         })
         callbacks.append(wandb.keras.WandbCallback())
 
-    model.compile(loss = tf.keras.losses.CategoricalCrossentropy(),
-              metrics = tf.keras.metrics.CategoricalAccuracy(),
-              optimizer = tf.keras.optimizers.Adam())
-    model.fit(data.x_train, data.y_train,
-         batch_size=128, epochs=3, callbacks=callbacks);
+    # model.compile(loss = tf.keras.losses.CategoricalCrossentropy(),
+    #           metrics = tf.keras.metrics.CategoricalAccuracy(),
+    #           optimizer = tf.keras.optimizers.Adam())
+    # model.fit(data.x_train, data.y_train,
+    #      batch_size=128, epochs=3, callbacks=callbacks);
 
 if __name__ == "__main__":
     main()

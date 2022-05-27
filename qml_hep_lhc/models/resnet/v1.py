@@ -45,7 +45,6 @@ class ResnetV1(Model):
     def call(self,input_tensor):
         num_filters = 16
         x = self.res_block1(input_tensor)
-  
 
         for stage in range(3):
             for res_block in range(self.num_res_blocks):
