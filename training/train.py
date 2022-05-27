@@ -1,7 +1,7 @@
 from gc import callbacks
 from xmlrpc.client import boolean
 from qml_hep_lhc.data.mnist import Mnist
-from qml_hep_lhc.models.resnet import Resnet
+from qml_hep_lhc.models.resnet.v2 import ResnetV2
 import tensorflow as tf
 import wandb
 import argparse
@@ -27,7 +27,7 @@ def main():
     data.prepare_data()
     data.setup()
     data_config = data.config()
-    model = Resnet(data_config, args)
+    model = ResnetV2(data_config, args)
     print(repr(data))
 
     callbacks = []
