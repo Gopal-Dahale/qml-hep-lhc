@@ -6,6 +6,7 @@ from qml_hep_lhc.models.qnn import QNN
 import tensorflow as tf
 import wandb
 import argparse
+from qml_hep_lhc.metrics import hinge_accuracy
 
 
 def _setup_parser():
@@ -20,7 +21,9 @@ def _setup_parser():
     parser.add_argument("--quantum", action="store_true", default=False)
     parser.add_argument("--binary-encoding", action="store_true", default=False)
     parser.add_argument("--threshold", type=float, default=0.5)
-    parser.add_argument("--binary-data", nargs='+', type=int, default=[0,1])
+    parser.add_argument("--binary-data", nargs='+', type=int, default=None)
+    parser.add_argument("--hinge-labels", action="store_true", default=False)
+    parser.add_argument("--batch-size", type=int, default=128)
     return parser
 
 def main():
@@ -32,7 +35,7 @@ def main():
     data_config = data.config()
     # model = ResnetV2(data_config, args)
     model = QNN(data.q_data_config())
-    model.build_graph()
+    print(repr(data))
 
     callbacks = []
     if args.wandb:
@@ -42,11 +45,11 @@ def main():
         })
         callbacks.append(wandb.keras.WandbCallback())
 
-    # model.compile(loss = tf.keras.losses.CategoricalCrossentropy(),
-    #           metrics = tf.keras.metrics.CategoricalAccuracy(),
-    #           optimizer = tf.keras.optimizers.Adam())
-    # model.fit(data.x_train, data.y_train,
-    #      batch_size=128, epochs=3, callbacks=callbacks);
+    model.compile(loss = tf.keras.losses.Hinge(),
+              metrics = [hinge_accuracy],
+              optimizer = tf.keras.optimizers.Adam())
+    model.fit(data.qx_train, data.y_train,
+         batch_size=128, epochs=3, callbacks=callbacks, verbose = 1);
 
 if __name__ == "__main__":
     main()
