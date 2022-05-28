@@ -108,6 +108,7 @@ celerybeat.pid
 env/
 venv/
 qml-env/
+qenv/
 ENV/
 env.bak/
 venv.bak/
