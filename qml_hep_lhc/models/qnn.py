@@ -25,15 +25,30 @@ class QNN(Model):
         readout = cirq.GridQubit(-1, -1)
         circuit = cirq.Circuit()
 
+        # Prepare the readout qubit.
+        circuit.append(cirq.X(readout))
+        circuit.append(cirq.H(readout))
+
         builder = CircuitLayerBuilder(
             data_qubits = data_qubits,
             readout=readout)
 
+        # Then add layers (experiment by adding more).
+        builder.add_layer(circuit, cirq.XX, "xx1")
+        builder.add_layer(circuit, cirq.ZZ, "zz1")
+
+        # Finally, prepare the readout qubit.
+        circuit.append(cirq.H(readout))
+
+        self.model_circuit = circuit
+        self.model_readout = cirq.Z(readout)
+        
+        self.expectation_layer = tfq.layers.PQC(self.model_circuit,operators=self.model_readout)
+
     def call(self,input_tensor):
-        pass
-        # tfq.layers.PQC()
+        expectation = self.expectation_layer(input_tensor)
+        return expectation
 
     def build_graph(self):
-        x = Input(shape=self.input_dim ,dtype = tf.string)
-        print(x)
-        # return Model(inputs=[x], outputs=self.call(x))
+        x = Input(shape=() ,dtype = tf.string)
+        return Model(inputs=[x], outputs=self.call(x))
