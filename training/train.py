@@ -16,34 +16,43 @@ def _import_class(module_and_class_name: str) -> type:
 
 def _setup_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--labels-to-categorical",
-                        action="store_true",
-                        default=False)
 
-    # argument for using wandb
-    parser.add_argument("--wandb", action="store_true", default=False)
-    parser.add_argument("--normalize", action="store_true", default=False)
-    parser.add_argument("--resnet-depth", type=int, default=20)
-    parser.add_argument("--resize", nargs='+', type=int, default=None)
-    parser.add_argument("--quantum", action="store_true", default=False)
-    parser.add_argument("--binary-encoding",
+    # Data parameters
+    data_group = parser.add_argument_group("Data")
+    data_group.add_argument("--data-class", "-dc", type=str, default="MNIST")
+    data_group.add_argument("--quantum", "-q", action="store_true")
+    data_group.add_argument("--labels-to-categorical", "-to-cat",
                         action="store_true",
                         default=False)
-    parser.add_argument("--threshold", type=float, default=0.5)
-    parser.add_argument("--binary-data", nargs='+', type=int, default=None)
-    parser.add_argument("--hinge-labels", action="store_true", default=False)
-    parser.add_argument("--batch-size", type=int, default=128)
-    parser.add_argument("--data-class", type=str, default="MNIST")
-    parser.add_argument("--model-class", type=str, default="ResnetV1")
-    parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--loss", type=str, default="CategoricalCrossentropy")
-    parser.add_argument("--optimizer", type=str, default="Adam")
-    parser.add_argument("--accuracy", type=str, default="accuracy")
-    parser.add_argument("--validation-split", type=float, default=0.2)
-    parser.add_argument("--num-workers", type=int, default=2)
-    parser.add_argument("--percent-samples", type=float, default=1.0)
-    parser.add_argument("--learning-rate", type=float, default=0.0001)
-    parser.add_argument("--angle-encoding", action="store_true", default=False)
+    data_group.add_argument("--normalize", "-nz", action="store_true", default=False)
+    data_group.add_argument("--resize", "-rz", nargs='+', type=int, default=None)
+    data_group.add_argument("--binary-encoding", "-be",
+                        action="store_true",
+                        default=False)
+    data_group.add_argument("--threshold", "-t", type=float, default=0.5)
+    data_group.add_argument("--binary-data", "-bd", nargs='+', type=int, default=None)
+    data_group.add_argument("--hinge-labels", "-hinge", action="store_true", default=False)
+    data_group.add_argument("--batch-size", "-batch", type=int, default=128)
+    data_group.add_argument("--percent-samples", "-per-samp", type=float, default=1.0)
+    data_group.add_argument("--angle-encoding", "-ae", action="store_true", default=False)
+    
+    # Model parameters
+    model_group = parser.add_argument_group("Model")    
+    model_group.add_argument("--model-class", "-mc", type=str, default="ResnetV1")
+    model_group.add_argument("--resnet-depth", "-rd" ,type=int, default=20)
+
+
+    # Hyperparameters
+    hyper_group = parser.add_argument_group("Hyperparameters")
+    hyper_group.add_argument("--epochs", "-e" ,type=int, default=3)
+    hyper_group.add_argument("--loss", "-l", type=str, default="CategoricalCrossentropy")
+    hyper_group.add_argument("--optimizer", "-opt", type=str, default="Adam")
+    hyper_group.add_argument("--accuracy", "-acc", type=str, default="accuracy")
+    hyper_group.add_argument("--validation-split", "-val-split" ,type=float, default=0.2)
+    hyper_group.add_argument("--num-workers", "-workers", type=int, default=2)
+    hyper_group.add_argument("--learning-rate", "-lr" ,type=float, default=0.0001)
+    hyper_group.add_argument("--wandb", action="store_true", default=False)
+
     return parser
 
 
@@ -100,6 +109,8 @@ def main():
     if args.hinge_labels:
         accuracy = hinge_accuracy
 
+
+    print(model.build_graph().summary())
     model.compile(loss=loss_fn(),
                   metrics=['accuracy'],
                   optimizer=optimizer(clr))
