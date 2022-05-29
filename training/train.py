@@ -22,7 +22,7 @@ def _setup_parser():
     parser.add_argument("--wandb", action="store_true", default=False)
     parser.add_argument("--normalize", action="store_true", default=False)
     parser.add_argument("--resnet-depth", type=int, default=20)
-    parser.add_argument("--resize", nargs='+',type=int,default=[28,28])
+    parser.add_argument("--resize", nargs='+',type=int,default=None)
     parser.add_argument("--quantum", action="store_true", default=False)
     parser.add_argument("--binary-encoding", action="store_true", default=False)
     parser.add_argument("--threshold", type=float, default=0.5)
@@ -58,7 +58,7 @@ def main():
         x_test, y_test = data.qx_test, data.y_test
     else:
         model_class = _import_class(f"qml_hep_lhc.models.{args.model_class}")
-        model = model_class(data.config())
+        model = model_class(data.config(), args)
         x_train, y_train = data.x_train, data.y_train
         x_test, y_test = data.x_test, data.y_test
 
