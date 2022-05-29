@@ -74,12 +74,12 @@ class DataPreprocessor():
             self.output_dims = (1, )
 
     def process(self):
-        if self._normalize:
-            self.normalize()
-        if self._resize is not None and len(self._resize) == 2:
-            self.resize()
         if self._binary_data and len(self._binary_data) == 2:
             self.binary_data()
+        if self._resize is not None and len(self._resize) == 2:
+            self.resize()
+        if self._normalize:
+            self.normalize()
         if self._labels_to_categorical:
             self.labels_to_categorical()
         if self._hinge_labels:
