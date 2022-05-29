@@ -59,8 +59,8 @@ class DataPreprocessor():
 
     def binary_data(self):
         if self._is_binary_data is False:
-            d1 = self.binary_data[0]
-            d2 = self.binary_data[1]
+            d1 = self._binary_data[0]
+            d2 = self._binary_data[1]
             self.x_train, self.y_train = binary_filter(d1, d2, self.x_train,
                                                        self.y_train)
             self.x_test, self.y_test = binary_filter(d1, d2, self.x_test,

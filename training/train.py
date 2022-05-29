@@ -56,8 +56,7 @@ def main():
     data.setup()
 
     if args.quantum:
-        model_class = _import_class(
-            f"qml_hep_lhc.models.quantum.{args.model_class}")
+        model_class = _import_class(f"qml_hep_lhc.models.{args.model_class}")
         model = model_class(data.q_data_config(), args)
         x_train, y_train = data.qx_train, data.y_train
         x_test, y_test = data.qx_test, data.y_test

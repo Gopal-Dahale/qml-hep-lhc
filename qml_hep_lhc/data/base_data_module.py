@@ -68,17 +68,17 @@ class BaseDataModule():
         if self._quantum:
             # Encoding the data as quantum circuits
             if self._binary_encoding:
-                self.x_train = binary_encoding(self.x_train, self._threshold)
-                self.x_test = binary_encoding(self.x_test, self._threshold)
+                self.qx_train = binary_encoding(self.x_train, self._threshold)
+                self.qx_test = binary_encoding(self.x_test, self._threshold)
 
             image_size = self.qx_train.shape[1:]
 
             self.qx_train = [
-                convert_to_circuit(self.x_train, image_size)
+                convert_to_circuit(x, image_size)
                 for x in self.qx_train
             ]
             self.qx_test = [
-                convert_to_circuit(self.x_test, image_size)
+                convert_to_circuit(x, image_size)
                 for x in self.qx_test
             ]
 
