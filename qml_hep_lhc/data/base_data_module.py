@@ -4,6 +4,7 @@ from urllib.request import urlretrieve
 import tensorflow_quantum as tfq
 from qml_hep_lhc.data.utils.q_utils import binary_encoding, angle_encoding
 import numpy as np
+from tabulate import tabulate
 
 class BaseDataModule():
 
@@ -101,21 +102,21 @@ class BaseDataModule():
             self.q_mapping = self.mapping
 
     def __repr__(self, name) -> str:
-        data = f"{name} dataset"+ "\n" + \
-            f"Train/test sizes: {self.x_train.shape}, {self.x_test.shape}\n"+\
-            f"Train/test labels: {self.y_train.shape}, {self.y_test.shape}\n"
+        headers = ["Data", "Train size", "Test size", "Dims"]
+        rows = [["X", self.x_train.shape, self.x_test.shape, self.dims], 
+                ["y", self.y_train.shape, self.y_test.shape, self.output_dims]]
 
-        q_data = ""
+        data = f"Dataset :{name}\n"
+        data += tabulate(rows, headers, tablefmt="fancy_grid") + "\n"
+
         if self._quantum:
-            q_data = "Quantum dataset"+ "\n" + \
-                f"Train/test sizes: {self.qx_train.shape}, {self.qx_test.shape}\n"+\
-                f"Train/test labels: {self.y_train.shape}, {self.y_test.shape}\n" \
-                f"Quantum data config"+ "\n" + \
-                f"input_dims: {self.q_dims}\n"+\
-                f"output_dims: {self.q_output_dims}\n"+\
-                f"mapping: {self.q_mapping}\n"
+            q_rows = [["QX", self.qx_train.shape, self.qx_test.shape, self.q_dims], 
+                ["Qy", self.y_train.shape, self.y_test.shape, self.q_output_dims]]
 
-        return data + q_data
+            data += "Quantum Dataset\n"
+            data += tabulate(q_rows, headers, tablefmt="fancy_grid") + "\n"
+
+        return data
 
 
 class TqdmUpTo(tqdm):
