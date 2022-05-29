@@ -6,7 +6,7 @@ class ResnetV2(Model):
     def __init__(self,data_config, args = None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
-        self.depth = self.args.get("depth", 20)
+        self.depth = self.args.get("resnet_depth", 56)
 
         if (self.depth - 2) % 9 != 0:
             raise ValueError('depth should be 9n + 2 (eg 56 or 110 in [b])')
@@ -37,9 +37,7 @@ class ResnetV2(Model):
                         strides = 2    # downsample
 
                 block.append(BottleneckResidual(num_filters=num_filters_in, kernel_size=1, strides=strides, activation=activation, batch_normalization=batch_normalization, conv_first=False))
-
                 block.append(BottleneckResidual(num_filters=num_filters_in, conv_first=False))
-
                 block.append(BottleneckResidual(num_filters=num_filters_out, kernel_size=1, conv_first=False))
 
                 if res_block == 0:
@@ -61,16 +59,22 @@ class ResnetV2(Model):
         x = self.res_block1(input_tensor)
 
         for stage in range(3):
+
             for res_block in range(self.num_res_blocks):
+    
                 if stage == 0:
                     num_filters_out = num_filters_in * 4
                 else:
                     num_filters_out = num_filters_in * 2
                 y = self.res_blocks[stage*self.num_res_blocks + res_block][0](x)
+    
                 y = self.res_blocks[stage*self.num_res_blocks + res_block][1](y)
+    
                 y = self.res_blocks[stage*self.num_res_blocks + res_block][2](y)
+    
                 if res_block == 0:
                     x = self.res_blocks[stage*self.num_res_blocks + res_block][3](x)
+        
                 x = add([x, y])
             num_filters_in = num_filters_out
         x = self.batch_norm(x)

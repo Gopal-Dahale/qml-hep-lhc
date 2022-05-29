@@ -7,7 +7,7 @@ class ResnetV1(Model):
     def __init__(self,data_config, args = None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
-        self.depth = self.args.get("depth", 20)
+        self.depth = self.args.get("resnet_depth", 20)
 
         if (self.depth - 2) % 6 != 0:
             raise ValueError('depth should be 6n + 2 (eg 20, 32, 44 in [a])')
@@ -45,18 +45,22 @@ class ResnetV1(Model):
     def call(self,input_tensor):
         num_filters = 16
         x = self.res_block1(input_tensor)
-
         for stage in range(3):
+
             for res_block in range(self.num_res_blocks):
+    
                 y = self.res_blocks[stage*self.num_res_blocks + res_block][0](x)
+    
                 y = self.res_blocks[stage*self.num_res_blocks + res_block][1](y)
+    
                 if stage > 0 and res_block == 0:
                     x = self.res_blocks[stage*self.num_res_blocks + res_block][2](x)
+        
                 x = add([x, y])
                 x = self.activation_layer(x)
             num_filters *= 2    
         
-        x = self.activation_layer(x)
+        x = self.pooling(x)
         x = self.flatten(x)
         x = self.dense(x)
         return x
