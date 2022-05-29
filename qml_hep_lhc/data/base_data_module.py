@@ -109,7 +109,11 @@ class BaseDataModule():
         if self._quantum:
             q_data = "Quantum dataset"+ "\n" + \
                 f"Train/test sizes: {self.qx_train.shape}, {self.qx_test.shape}\n"+\
-                f"Train/test labels: {self.y_train.shape}, {self.y_test.shape}\n"
+                f"Train/test labels: {self.y_train.shape}, {self.y_test.shape}\n" \
+                f"Quantum data config"+ "\n" + \
+                f"input_dims: {self.q_dims}\n"+\
+                f"output_dims: {self.q_output_dims}\n"+\
+                f"mapping: {self.q_mapping}\n"
 
         return data + q_data
 

@@ -135,3 +135,4 @@ dmypy.json
 # Misc
 datasets/
 .vscode/
+qml-hep-lhc.code-workspace
