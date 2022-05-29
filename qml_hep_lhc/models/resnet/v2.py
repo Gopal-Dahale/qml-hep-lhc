@@ -111,4 +111,4 @@ class ResnetV2(Model):
 
     def build_graph(self):
         x = Input(shape=self.input_dim)
-        return Model(inputs=[x], outputs=self.call(x))
+        return Model(inputs=[x], outputs=self.call(x), name="ResnetV2")

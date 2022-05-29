@@ -50,7 +50,7 @@ class QCNNCong(Model):
 
     def build_graph(self):
         x = Input(shape=(), dtype=tf.string)
-        return Model(inputs=[x], outputs=self.call(x))
+        return Model(inputs=[x], outputs=self.call(x), name="QCNNCong")
 
 
 def cluster_state_circuit(bits):
