@@ -4,7 +4,9 @@ import tensorflow as tf
 import tensorflow_quantum as tfq
 import cirq
 
+
 class CircuitLayerBuilder():
+
     def __init__(self, data_qubits, readout):
         self.data_qubits = data_qubits
         self.readout = readout
@@ -16,7 +18,8 @@ class CircuitLayerBuilder():
 
 
 class QNN(Model):
-    def __init__(self,data_config, args = None):
+
+    def __init__(self, data_config, args=None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
         self.input_dim = data_config["input_dims"]
@@ -29,9 +32,7 @@ class QNN(Model):
         circuit.append(cirq.X(readout))
         circuit.append(cirq.H(readout))
 
-        builder = CircuitLayerBuilder(
-            data_qubits = data_qubits,
-            readout=readout)
+        builder = CircuitLayerBuilder(data_qubits=data_qubits, readout=readout)
 
         # Then add layers (experiment by adding more).
         builder.add_layer(circuit, cirq.XX, "xx1")
@@ -42,13 +43,14 @@ class QNN(Model):
 
         self.model_circuit = circuit
         self.model_readout = cirq.Z(readout)
-        
-        self.expectation_layer = tfq.layers.PQC(self.model_circuit,operators=self.model_readout)
 
-    def call(self,input_tensor):
+        self.expectation_layer = tfq.layers.PQC(self.model_circuit,
+                                                operators=self.model_readout)
+
+    def call(self, input_tensor):
         expectation = self.expectation_layer(input_tensor)
         return expectation
 
     def build_graph(self):
-        x = Input(shape=() ,dtype = tf.string)
+        x = Input(shape=(), dtype=tf.string)
         return Model(inputs=[x], outputs=self.call(x))

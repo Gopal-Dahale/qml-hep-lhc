@@ -2,8 +2,10 @@ from qml_hep_lhc.models.resnet.bottleneck import BottleneckResidual
 from tensorflow.keras.layers import Dense, Activation, AveragePooling2D, Flatten, Input, add, BatchNormalization
 from tensorflow.keras import Model
 
+
 class ResnetV2(Model):
-    def __init__(self,data_config, args = None):
+
+    def __init__(self, data_config, args=None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
         self.depth = self.args.get("resnet_depth", 56)
@@ -16,7 +18,8 @@ class ResnetV2(Model):
         self.num_classes = len(data_config["mapping"])
 
         num_filters_in = 16
-        self.res_block1 = BottleneckResidual(num_filters= num_filters_in, conv_first=True)
+        self.res_block1 = BottleneckResidual(num_filters=num_filters_in,
+                                             conv_first=True)
         self.res_blocks = []
 
         for stage in range(3):
@@ -25,7 +28,7 @@ class ResnetV2(Model):
                 activation = 'relu'
                 batch_normalization = True
                 strides = 1
-                
+
                 if stage == 0:
                     num_filters_out = num_filters_in * 4
                     if res_block == 0:  # first layer and first stage
@@ -34,25 +37,43 @@ class ResnetV2(Model):
                 else:
                     num_filters_out = num_filters_in * 2
                     if res_block == 0:  # first layer but not first stage
-                        strides = 2    # downsample
+                        strides = 2  # downsample
 
-                block.append(BottleneckResidual(num_filters=num_filters_in, kernel_size=1, strides=strides, activation=activation, batch_normalization=batch_normalization, conv_first=False))
-                block.append(BottleneckResidual(num_filters=num_filters_in, conv_first=False))
-                block.append(BottleneckResidual(num_filters=num_filters_out, kernel_size=1, conv_first=False))
+                block.append(
+                    BottleneckResidual(num_filters=num_filters_in,
+                                       kernel_size=1,
+                                       strides=strides,
+                                       activation=activation,
+                                       batch_normalization=batch_normalization,
+                                       conv_first=False))
+                block.append(
+                    BottleneckResidual(num_filters=num_filters_in,
+                                       conv_first=False))
+                block.append(
+                    BottleneckResidual(num_filters=num_filters_out,
+                                       kernel_size=1,
+                                       conv_first=False))
 
                 if res_block == 0:
-                    block.append(BottleneckResidual(num_filters=num_filters_out, kernel_size=1, strides=strides, activation=None, batch_normalization=False))
+                    block.append(
+                        BottleneckResidual(num_filters=num_filters_out,
+                                           kernel_size=1,
+                                           strides=strides,
+                                           activation=None,
+                                           batch_normalization=False))
 
                 self.res_blocks.append(block.copy())
                 del block
 
             num_filters_in = num_filters_out
 
-        self.batch_norm = BatchNormalization()    
+        self.batch_norm = BatchNormalization()
         self.activation_layer = Activation('relu')
         self.pooling = AveragePooling2D(pool_size=(8, 8))
         self.flatten = Flatten()
-        self.dense = Dense(self.num_classes, activation='softmax', kernel_initializer='he_normal')
+        self.dense = Dense(self.num_classes,
+                           activation='softmax',
+                           kernel_initializer='he_normal')
 
     def call(self, input_tensor):
         num_filters_in = 16
@@ -61,20 +82,24 @@ class ResnetV2(Model):
         for stage in range(3):
 
             for res_block in range(self.num_res_blocks):
-    
+
                 if stage == 0:
                     num_filters_out = num_filters_in * 4
                 else:
                     num_filters_out = num_filters_in * 2
-                y = self.res_blocks[stage*self.num_res_blocks + res_block][0](x)
-    
-                y = self.res_blocks[stage*self.num_res_blocks + res_block][1](y)
-    
-                y = self.res_blocks[stage*self.num_res_blocks + res_block][2](y)
-    
+                y = self.res_blocks[stage * self.num_res_blocks +
+                                    res_block][0](x)
+
+                y = self.res_blocks[stage * self.num_res_blocks +
+                                    res_block][1](y)
+
+                y = self.res_blocks[stage * self.num_res_blocks +
+                                    res_block][2](y)
+
                 if res_block == 0:
-                    x = self.res_blocks[stage*self.num_res_blocks + res_block][3](x)
-        
+                    x = self.res_blocks[stage * self.num_res_blocks +
+                                        res_block][3](x)
+
                 x = add([x, y])
             num_filters_in = num_filters_out
         x = self.batch_norm(x)
@@ -85,5 +110,5 @@ class ResnetV2(Model):
         return y
 
     def build_graph(self):
-        x = Input(shape = self.input_dim)
+        x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x))

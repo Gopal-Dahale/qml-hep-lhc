@@ -1,8 +1,10 @@
 import numpy as np
 import cirq
 
+
 def binary_encoding(x, threshold=0.5):
     return np.array(x > threshold, dtype=np.float32)
+
 
 def convert_to_circuit(image, size):
     """Encode truncated classical image into quantum datapoint."""

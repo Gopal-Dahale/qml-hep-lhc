@@ -4,12 +4,14 @@ from urllib.request import urlretrieve
 import tensorflow_quantum as tfq
 from qml_hep_lhc.data.utils.q_utils import binary_encoding, convert_to_circuit
 
+
 class BaseDataModule():
-    def __init__(self, args = None) -> None:
-        self.args = vars(args) if args is not None else {}   
+
+    def __init__(self, args=None) -> None:
+        self.args = vars(args) if args is not None else {}
 
         self.data_dir = self.data_dirname() / "downloaded"
-        self.processed_data_dir = self.data_dirname()/"processed"
+        self.processed_data_dir = self.data_dirname() / "processed"
 
         if not self.data_dir.exists():
             self.data_dir.mkdir()
@@ -17,8 +19,8 @@ class BaseDataModule():
             self.processed_data_dir.mkdir()
 
         self.dims = None
-        self.output_dims= None
-        self.mapping= None
+        self.output_dims = None
+        self.mapping = None
         self.x_train = None
         self.y_train = None
         self.x_test = None
@@ -35,7 +37,6 @@ class BaseDataModule():
         self._quantum = self.args.get("quantum", False)
         self._binary_encoding = self.args.get("binary_encoding", False)
         self._threshold = self.args.get("threshold", 0.5)
-        
 
     @classmethod
     def data_dirname(cls):
@@ -43,16 +44,23 @@ class BaseDataModule():
 
     def config(self):
         """Return important settings of the dataset, which will be passed to instantiate models."""
-        return {"input_dims": self.dims, "output_dims": self.output_dims, "mapping": self.mapping}
-    
+        return {
+            "input_dims": self.dims,
+            "output_dims": self.output_dims,
+            "mapping": self.mapping
+        }
+
     def q_data_config(self):
         """Return important settings of the dataset, which will be passed to instantiate models."""
-        return {"input_dims": self.q_dims, "output_dims": self.q_output_dims, "mapping": self.q_mapping}
-    
+        return {
+            "input_dims": self.q_dims,
+            "output_dims": self.q_output_dims,
+            "mapping": self.q_mapping
+        }
 
     def prepare_data(self):
         pass
-        
+
     def setup(self):
         pass
 
@@ -65,14 +73,20 @@ class BaseDataModule():
 
             image_size = self.qx_train.shape[1:]
 
-            self.qx_train = [convert_to_circuit(self.x_train, image_size) for x in self.qx_train]
-            self.qx_test = [convert_to_circuit(self.x_test, image_size) for x in self.qx_test]
+            self.qx_train = [
+                convert_to_circuit(self.x_train, image_size)
+                for x in self.qx_train
+            ]
+            self.qx_test = [
+                convert_to_circuit(self.x_test, image_size)
+                for x in self.qx_test
+            ]
 
             self.qx_train = tfq.convert_to_tensor(self.qx_train)
             self.qx_test = tfq.convert_to_tensor(self.qx_test)
 
             self.q_dims = (image_size[0], image_size[1])
-            self.q_output_dims = (1,)
+            self.q_output_dims = (1, )
             self.q_mapping = self.mapping
 
     def __repr__(self, name) -> str:
@@ -105,9 +119,12 @@ class TqdmUpTo(tqdm):
         """
         if tsize is not None:
             self.total = tsize  # pylint: disable=attribute-defined-outside-init
-        self.update(blocks * bsize - self.n)  # will also set self.n = b * bsize
+        self.update(blocks * bsize -
+                    self.n)  # will also set self.n = b * bsize
+
 
 def _download_raw_dataset(url, filename):
     print(f"Downloading raw dataset from {url} to {filename}")
-    with TqdmUpTo(unit="B", unit_scale=True, unit_divisor=1024, miniters=1) as t:
+    with TqdmUpTo(unit="B", unit_scale=True, unit_divisor=1024,
+                  miniters=1) as t:
         urlretrieve(url, filename, reporthook=t.update_to, data=None)  # nosec
