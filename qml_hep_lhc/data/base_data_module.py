@@ -2,8 +2,8 @@ from pathlib import Path
 from tqdm import tqdm
 from urllib.request import urlretrieve
 import tensorflow_quantum as tfq
-from qml_hep_lhc.data.utils.q_utils import binary_encoding, convert_to_circuit
-
+from qml_hep_lhc.data.utils.q_utils import binary_encoding, angle_encoding
+import numpy as np
 
 class BaseDataModule():
 
@@ -35,7 +35,8 @@ class BaseDataModule():
         self.qx_test = None
 
         self._quantum = self.args.get("quantum", False)
-        self._binary_encoding = self.args.get("binary_encoding", False)
+        self._binary_encoding = self.args.get("binary_encoding", True)
+        self._angle_encoding = self.args.get("angle_encoding", False)
         self._threshold = self.args.get("threshold", 0.5)
 
     @classmethod
@@ -66,26 +67,36 @@ class BaseDataModule():
 
     def encoding_data_to_quantum_circuit(self):
         if self._quantum:
+            image_size = self.x_train.shape[1:]
+           
             # Encoding the data as quantum circuits
             if self._binary_encoding:
-                self.qx_train = binary_encoding(self.x_train, self._threshold)
-                self.qx_test = binary_encoding(self.x_test, self._threshold)
+                self.qx_train = np.array(self.x_train > self._threshold, dtype=np.float32)
+                self.qx_test = np.array(self.x_test > self._threshold, dtype=np.float32)
 
-            image_size = self.qx_train.shape[1:]
+                self.qx_train = [
+                    binary_encoding(x, image_size)
+                    for x in self.qx_train
+                ]
+                self.qx_test = [
+                    binary_encoding(x, image_size)
+                    for x in self.qx_test
+                ]
 
-            self.qx_train = [
-                convert_to_circuit(x, image_size)
-                for x in self.qx_train
-            ]
-            self.qx_test = [
-                convert_to_circuit(x, image_size)
-                for x in self.qx_test
-            ]
+                self.q_dims = (image_size[0] , image_size[1]) 
+            
+            elif self._angle_encoding:
+                self.qx_train = [angle_encoding(x, image_size) for x in self.x_train]
+                self.qx_test = [angle_encoding(x, image_size) for x in self.x_test]
+                self.q_dims = (1,image_size[0]*image_size[1])
+
+           
 
             self.qx_train = tfq.convert_to_tensor(self.qx_train)
             self.qx_test = tfq.convert_to_tensor(self.qx_test)
 
-            self.q_dims = (image_size[0], image_size[1])
+            
+            print("q_dims", self.q_dims)
             self.q_output_dims = (1, )
             self.q_mapping = self.mapping
 

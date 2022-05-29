@@ -43,6 +43,7 @@ def _setup_parser():
     parser.add_argument("--num-workers", type=int, default=2)
     parser.add_argument("--percent-samples", type=float, default=1.0)
     parser.add_argument("--learning-rate", type=float, default=0.0001)
+    parser.add_argument("--angle-encoding", action="store_true", default=False)
     return parser
 
 
@@ -54,6 +55,7 @@ def main():
     data = data_class(args)
     data.prepare_data()
     data.setup()
+    print(repr(data))
 
     if args.quantum:
         model_class = _import_class(f"qml_hep_lhc.models.{args.model_class}")
@@ -66,7 +68,7 @@ def main():
         x_train, y_train = data.x_train, data.y_train
         x_test, y_test = data.x_test, data.y_test
 
-    print(repr(data))
+    
 
     callbacks = []
     if args.wandb:

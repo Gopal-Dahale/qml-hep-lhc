@@ -23,6 +23,7 @@ class QNN(Model):
         super().__init__()
         self.args = vars(args) if args is not None else {}
         self.input_dim = data_config["input_dims"]
+        print(self.input_dim)
 
         data_qubits = cirq.GridQubit.rect(self.input_dim[0], self.input_dim[1])
         readout = cirq.GridQubit(-1, -1)
