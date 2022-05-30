@@ -91,8 +91,7 @@ class BaseDataModule():
                 self.qx_test = [angle_encoding(x, image_size) for x in self.x_test]
                 self.q_dims = (1,image_size[0]*image_size[1])
 
-           
-
+    
             self.qx_train = tfq.convert_to_tensor(self.qx_train)
             self.qx_test = tfq.convert_to_tensor(self.qx_test)
 

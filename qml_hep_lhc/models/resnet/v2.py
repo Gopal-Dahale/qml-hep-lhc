@@ -1,3 +1,6 @@
+"""
+This implementation is based on https://www.geeksforgeeks.org/residual-networks-resnet-deep-learning/
+"""
 from qml_hep_lhc.models.resnet.bottleneck import BottleneckResidual
 from tensorflow.keras.layers import Dense, Activation, AveragePooling2D, Flatten, Input, add, BatchNormalization
 from tensorflow.keras import Model

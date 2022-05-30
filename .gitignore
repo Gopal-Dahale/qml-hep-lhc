@@ -136,3 +136,4 @@ dmypy.json
 datasets/
 .vscode/
 qml-hep-lhc.code-workspace
+research_papers/

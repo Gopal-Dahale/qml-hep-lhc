@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 
 class DataPreprocessor():
@@ -24,6 +25,7 @@ class DataPreprocessor():
         self._binary_data = self.args.get("binary_data", None)
         self._hinge_labels = self.args.get("hinge_labels", False)
         self._is_binary_data = self.args.get("is_binary_data", False)
+        self._pca = self.args.get("pca", None)
 
         if self._is_binary_data is False:
             if self._hinge_labels and self._binary_data is None:
@@ -33,7 +35,7 @@ class DataPreprocessor():
 
     def normalize(self):
         scaler = StandardScaler()
-        img_size = self.x_train.shape[1:]
+        img_size = self.dims
         self.x_train = scaler.fit_transform(
             self.x_train.reshape(-1, img_size[0] * img_size[1])).reshape(
                 -1, img_size[0], img_size[1])
@@ -73,11 +75,25 @@ class DataPreprocessor():
             self.y_test = 2 * self.y_test - 1
             self.output_dims = (1, )
 
+    def pca(self,n_components = 16):
+        pca_obj = PCA(n_components)
+
+        pca_obj.fit(self.x_train.reshape(-1, self.dims[0] * self.dims[1]))
+        print("Cumulative sum for train:", np.cumsum(pca_obj.explained_variance_ratio_ * 100)[-1])
+        self.x_train = pca_obj.transform(self.x_train.reshape(-1, self.dims[0] * self.dims[1]))
+
+        pca_obj.fit(self.x_test.reshape(-1, self.dims[0] * self.dims[1]))
+        print("Cumulative sum for test:", np.cumsum(pca_obj.explained_variance_ratio_ * 100)[-1])
+        self.x_test = pca_obj.transform(self.x_test.reshape(-1, self.dims[0] * self.dims[1]))
+        self.dims = (n_components, 1)
+
     def process(self):
         if self._binary_data and len(self._binary_data) == 2:
             self.binary_data()
         if self._resize is not None and len(self._resize) == 2:
             self.resize()
+        if self._pca is not None:
+            self.pca(self._pca)
         if self._normalize:
             self.normalize()
         if self._labels_to_categorical:

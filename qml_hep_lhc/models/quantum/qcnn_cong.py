@@ -1,5 +1,5 @@
 """
-This code is based on https://www.tensorflow.org/quantum/tutorials/qcnn
+This implementation is based on https://www.tensorflow.org/quantum/tutorials/qcnn
 """
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Layer

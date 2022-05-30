@@ -1,3 +1,6 @@
+"""
+This implementation is based on https://www.tensorflow.org/quantum/tutorials/mnist
+"""
 from tensorflow.keras import Model, Input
 import sympy
 import tensorflow as tf

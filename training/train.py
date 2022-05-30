@@ -35,6 +35,7 @@ def _setup_parser():
     data_group.add_argument("--batch-size", "-batch", type=int, default=128)
     data_group.add_argument("--percent-samples", "-per-samp", type=float, default=1.0)
     data_group.add_argument("--angle-encoding", "-ae", action="store_true", default=False)
+    data_group.add_argument("--pca", "-pca", type=int, default=None)
     
     # Model parameters
     model_group = parser.add_argument_group("Model")    
@@ -112,7 +113,7 @@ def main():
 
     print(model.build_graph().summary())
     model.compile(loss=loss_fn(),
-                  metrics=['accuracy'],
+                  metrics=[accuracy],
                   optimizer=optimizer(clr))
 
     model.fit(x_train,
