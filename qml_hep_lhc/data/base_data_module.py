@@ -36,7 +36,7 @@ class BaseDataModule():
         self.qx_test = None
 
         self._quantum = self.args.get("quantum", False)
-        self._binary_encoding = self.args.get("binary_encoding", True)
+        self._binary_encoding = self.args.get("binary_encoding", False)
         self._angle_encoding = self.args.get("angle_encoding", False)
         self._threshold = self.args.get("threshold", 0.5)
 
