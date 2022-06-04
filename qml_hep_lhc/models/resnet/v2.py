@@ -7,19 +7,27 @@ from tensorflow.keras import Model
 
 
 class ResnetV2(Model):
+    """
+    Resent v2 model. Paper: https://arxiv.org/abs/1603.05027
+    This implementation is based on https://www.geeksforgeeks.org/residual-networks-resnet-deep-learning/
+    """
 
     def __init__(self, data_config, args=None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
-        self.depth = self.args.get("resnet_depth", 56)
 
+        # Model configuration
+        self.depth = self.args.get("resnet_depth", 56)
         if (self.depth - 2) % 9 != 0:
             raise ValueError('depth should be 9n + 2 (eg 56 or 110 in [b])')
 
         self.num_res_blocks = int((self.depth - 2) / 9)
+
+        # Data config
         self.input_dim = data_config["input_dims"]
         self.num_classes = len(data_config["mapping"])
 
+        # Layers
         num_filters_in = 16
         self.res_block1 = BottleneckResidual(num_filters=num_filters_in,
                                              conv_first=True)
@@ -79,6 +87,15 @@ class ResnetV2(Model):
                            kernel_initializer='he_normal')
 
     def call(self, input_tensor):
+        """
+        The function takes in an input tensor and returns the output tensor
+        
+        Args:
+          input_tensor: The input tensor to the network.
+        
+        Returns:
+          The output of the last layer of the model.
+        """
         num_filters_in = 16
         x = self.res_block1(input_tensor)
 

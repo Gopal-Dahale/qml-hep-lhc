@@ -6,6 +6,9 @@ from qml_hep_lhc.data.utils.utils import ELECTRON_PHOTON_DATASET_URL
 
 
 class ElectronPhoton(BaseDataModule):
+    """
+    Electron Photon Data module
+    """
 
     def __init__(self, args=None) -> None:
         super().__init__(args)
@@ -13,21 +16,26 @@ class ElectronPhoton(BaseDataModule):
         self.dims = (32, 32, 1)
         self.output_dims = (1, )
         self.mapping = range(2)
+
+        # Parse args
         self.args['is_binary_data'] = True
         self.percent_samples = self.args.get("percent_samples", 1.0)
         self.filename = self.data_dir / 'electron_photon.npz'
 
     def prepare_data(self):
+        # Load the data
         if not self.filename.exists():
             _download_raw_dataset(ELECTRON_PHOTON_DATASET_URL, self.filename)
 
+        # Extract the data
         data = np.load(self.filename, allow_pickle=True)
         self.x_train, self.y_train = data['x_train'], data['y_train']
         self.x_test, self.y_test = data['x_test'], data['y_test']
 
+        # Shuffle the data
         self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
 
-        # extract percent_samples of data from x_train and x_test
+        # Extract percent_samples of data from x_train and x_test
         self.x_train = self.x_train[:int(self.percent_samples *
                                          len(self.x_train))]
         self.y_train = self.y_train[:int(self.percent_samples *
@@ -39,6 +47,7 @@ class ElectronPhoton(BaseDataModule):
 
     def setup(self):
 
+        # Preprocess the data
         preprocessor = DataPreprocessor(data={
             "x_train": self.x_train,
             "y_train": self.y_train,
@@ -50,15 +59,18 @@ class ElectronPhoton(BaseDataModule):
 
         preprocessor.process()
 
+        # Set the data
         self.x_train = preprocessor.x_train
         self.y_train = preprocessor.y_train
         self.x_test = preprocessor.x_test
         self.y_test = preprocessor.y_test
 
+        # Set the configuration
         self.dims = preprocessor.dims
         self.output_dims = preprocessor.output_dims
         self.mapping = preprocessor.mapping
 
+        # Set the quantum data
         self.encoding_data_to_quantum_circuit()
 
     def __repr__(self) -> str:

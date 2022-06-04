@@ -9,6 +9,9 @@ import cirq
 
 
 class CircuitLayerBuilder():
+    """
+    Circuit Layer Builder
+    """
 
     def __init__(self, data_qubits, readout):
         self.data_qubits = data_qubits
@@ -21,17 +24,23 @@ class CircuitLayerBuilder():
 
 
 class QNN(Model):
+    """
+    Quantum Neural Network
+    """
 
     def __init__(self, data_config, args=None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
-        self.input_dim = data_config["input_dims"]   
 
+        # Data config
+        self.input_dim = data_config["input_dims"]
+
+        # Prepare qubits
         data_qubits = cirq.GridQubit.rect(self.input_dim[0], self.input_dim[1])
         readout = cirq.GridQubit(-1, -1)
         circuit = cirq.Circuit()
 
-        # Prepare the readout qubit.
+        # Prepare the readout qubit
         circuit.append(cirq.X(readout))
         circuit.append(cirq.H(readout))
 
@@ -47,10 +56,20 @@ class QNN(Model):
         self.model_circuit = circuit
         self.model_readout = cirq.Z(readout)
 
+        # The PQC layer returns the expected value of the readout gate, range [-1,1].
         self.expectation_layer = tfq.layers.PQC(self.model_circuit,
                                                 operators=self.model_readout)
 
     def call(self, input_tensor):
+        """
+        The function takes in an input tensor and returns the expectation of the input tensor
+        
+        Args:
+          input_tensor: The input tensor to the layer.
+        
+        Returns:
+          The expectation of the input tensor.
+        """
         expectation = self.expectation_layer(input_tensor)
         return expectation
 

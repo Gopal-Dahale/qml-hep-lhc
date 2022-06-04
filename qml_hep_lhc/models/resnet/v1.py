@@ -1,25 +1,30 @@
-"""
-This implementation is based on https://www.geeksforgeeks.org/residual-networks-resnet-deep-learning/
-"""
 from qml_hep_lhc.models.resnet.bottleneck import BottleneckResidual
 from tensorflow.keras.layers import Dense, Activation, AveragePooling2D, Flatten, Input, add
 from tensorflow.keras import Model
 
 
 class ResnetV1(Model):
+    """
+    Resent v1 model. Paper: https://arxiv.org/abs/1512.03385
+    This implementation is based on https://www.geeksforgeeks.org/residual-networks-resnet-deep-learning/
+    """
 
     def __init__(self, data_config, args=None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
-        self.depth = self.args.get("resnet_depth", 20)
 
+        # Model configuration
+        self.depth = self.args.get("resnet_depth", 20)
         if (self.depth - 2) % 6 != 0:
             raise ValueError('depth should be 6n + 2 (eg 20, 32, 44 in [a])')
 
         self.num_res_blocks = int((self.depth - 2) / 6)
+
+        # Data config
         self.input_dim = data_config["input_dims"]
         self.num_classes = len(data_config["mapping"])
 
+        # Layers
         num_filters = 16
         self.res_block1 = BottleneckResidual()
         self.res_blocks = []
@@ -57,6 +62,15 @@ class ResnetV1(Model):
                            kernel_initializer='he_normal')
 
     def call(self, input_tensor):
+        """
+        The function takes in an input tensor and returns an output tensor
+        
+        Args:
+          input_tensor: The input tensor to the ResNet50 model.
+        
+        Returns:
+          The output of the last layer of the model.
+        """
         num_filters = 16
         x = self.res_block1(input_tensor)
         for stage in range(3):
