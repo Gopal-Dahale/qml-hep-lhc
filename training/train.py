@@ -76,6 +76,7 @@ def _setup_parser():
                             action="store_true",
                             default=False)
     data_group.add_argument("--pca", "-pca", type=int, default=None)
+    data_group.add_argument("--graph-conv", "-gc", type=int, default=None)
 
     # Model parameters
     model_group = parser.add_argument_group("Model")

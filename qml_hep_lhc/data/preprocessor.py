@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler, normalize
 from sklearn.decomposition import PCA
-
+from numba import njit, prange
 
 class DataPreprocessor():
     """
@@ -33,6 +33,7 @@ class DataPreprocessor():
         self._hinge_labels = self.args.get("hinge_labels", False)
         self._is_binary_data = self.args.get("is_binary_data", False)
         self._pca = self.args.get("pca", None)
+        self._graph_conv = self.args.get("graph_conv", False)
 
         # Handling binary data case for hinge labels
         if self._is_binary_data is False:
@@ -148,12 +149,44 @@ class DataPreprocessor():
             self.x_test.reshape(-1, self.dims[0] * self.dims[1]))
         self.dims = (n_components, 1)
 
+    def graph_convolution(self):
+        m = self.dims[0]
+        n = self.dims[1]
+        N = m*n
+        adj = np.zeros((N, N))
+        sigma = np.pi
+
+        # Create adjacency matrix
+        @njit(parallel=True)
+        def fill(adj,i):
+            for j in prange(i,N):
+                p1 = np.array([i//n, i%n])
+                p2 = np.array([j//n, j%n])
+                d = np.sqrt(np.sum(np.square(p1 - p2)))
+                val = np.exp(-d/(sigma**2))
+                adj[i][j] = val
+                adj[j][i] = val
+
+        def iterate(adj):
+            for i in prange(N):
+                fill(adj, i)
+        
+        iterate(adj)
+
+        # Perfrom graph convolution
+        self.x_train = self.x_train.reshape(-1, N).T
+        self.x_test = self.x_test.reshape(-1, N).T
+
+        self.x_train = np.dot(adj, self.x_train).T.reshape(-1, m, n)
+        self.x_test = np.dot(adj, self.x_test).T.reshape(-1, m, n)
+
     def process(self):
         """
         Data processing pipeline.
         """
         if self._binary_data and len(self._binary_data) == 2:
             self.binary_data()
+        
         if self._resize is not None and len(self._resize) == 2:
             self.resize()
         if self._pca is not None:
@@ -168,6 +201,9 @@ class DataPreprocessor():
             self.labels_to_categorical()
         if self._hinge_labels:
             self.hinge_labels()
+        
+        if self._graph_conv:
+            self.graph_convolution()
 
         # Add new axis
         self.x_train, self.x_test = self.x_train[..., np.newaxis], self.x_test[
