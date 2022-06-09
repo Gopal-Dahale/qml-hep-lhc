@@ -1,16 +1,17 @@
-"""
-This implementation is based on https://www.tensorflow.org/quantum/tutorials/qcnn
-"""
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Layer
 import tensorflow_quantum as tfq
 import tensorflow as tf
 import sympy
 import cirq
+from qml_hep_lhc.models.quantum.utils import one_qubit_unitary
 
 
 class QCNNCong(Model):
-
+    """
+    Quantum Convolutional Neural Network.
+    This implementation is based on https://www.tensorflow.org/quantum/tutorials/qcnn
+    """
     def __init__(self, data_config, args=None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
@@ -84,16 +85,6 @@ def cluster_state_circuit(bits):
     for this_bit, next_bit in zip(bits, bits[1:] + [bits[0]]):
         circuit.append(cirq.CZ(this_bit, next_bit))
     return circuit
-
-
-def one_qubit_unitary(bit, symbols):
-    """Make a Cirq circuit enacting a rotation of the bloch sphere about the X,
-    Y and Z axis, that depends on the values in `symbols`.
-    """
-    return cirq.Circuit(
-        cirq.X(bit)**symbols[0],
-        cirq.Y(bit)**symbols[1],
-        cirq.Z(bit)**symbols[2])
 
 
 def two_qubit_unitary(bits, symbols):

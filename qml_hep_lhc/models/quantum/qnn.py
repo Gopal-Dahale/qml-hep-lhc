@@ -1,6 +1,3 @@
-"""
-This implementation is based on https://www.tensorflow.org/quantum/tutorials/mnist
-"""
 from tensorflow.keras import Model, Input
 import sympy
 import tensorflow as tf
@@ -25,7 +22,8 @@ class CircuitLayerBuilder():
 
 class QNN(Model):
     """
-    Quantum Neural Network
+    Quantum Neural Network.
+    This implementation is based on https://www.tensorflow.org/quantum/tutorials/mnist
     """
 
     def __init__(self, data_config, args=None):

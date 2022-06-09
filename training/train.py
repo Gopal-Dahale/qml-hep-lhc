@@ -77,6 +77,7 @@ def _setup_parser():
                             default=False)
     data_group.add_argument("--pca", "-pca", type=int, default=None)
     data_group.add_argument("--graph-conv", "-gc", type=int, default=None)
+    data_group.add_argument("--center-crop", "-cc", type=float, default=None)
 
     # Model parameters
     model_group = parser.add_argument_group("Model")
@@ -94,10 +95,7 @@ def _setup_parser():
                              type=str,
                              default="CategoricalCrossentropy")
     hyper_group.add_argument("--optimizer", "-opt", type=str, default="Adam")
-    hyper_group.add_argument("--accuracy",
-                             "-acc",
-                             type=str,
-                             default="accuracy")
+    hyper_group.add_argument("--accuracy", "-acc", type=str, default="accuracy")
     hyper_group.add_argument("--validation-split",
                              "-val-split",
                              type=float,
