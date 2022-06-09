@@ -142,11 +142,18 @@ def main():
     parser = _setup_parser()
     args = parser.parse_args()
 
+    arg_groups = {}
+    for group in parser._action_groups:
+        group_dict = {
+            a.dest: getattr(args, a.dest, None) for a in group._group_actions
+        }
+        arg_groups[group.title] = argparse.Namespace(**group_dict)
+
     # Importing the data class
     data_class = _import_class(f"qml_hep_lhc.data.{args.data_class}")
 
     # Creating a data object, and then calling the prepare_data and setup methods on it.
-    data = data_class(args)
+    data = data_class(arg_groups['Data'])
     data.prepare_data()
     data.setup()
     print(data)
@@ -155,19 +162,21 @@ def main():
     model_class = _import_class(f"qml_hep_lhc.models.{args.model_class}")
 
     if args.quantum:
-        model = model_class(data.q_data_config(), args)  # Quantum model
+        model = model_class(data.q_data_config(),
+                            arg_groups['Model'])  # Quantum model
 
         # Extract the train and test quantum circuits
         x_train, y_train = data.qx_train, data.y_train
         x_test, y_test = data.qx_test, data.y_test
     else:
-        model = model_class(data.config(), args)  # Classical model
+        model = model_class(data.config(),
+                            arg_groups['Model'])  # Classical model
 
         # Extract the train and test classical data
         x_train, y_train = data.x_train, data.y_train
         x_test, y_test = data.x_test, data.y_test
 
-    callbacks = _setup_callbacks(args)
+    callbacks = _setup_callbacks(arg_groups['Hyperparameters'])
 
     # Setup Hyperparameters
 
