@@ -1,4 +1,4 @@
-from qml_hep_lhc.models.resnet.bottleneck import BottleneckResidual
+from qml_hep_lhc.models.classical.resnet.bottleneck import BottleneckResidual
 from tensorflow.keras.layers import Dense, Activation, AveragePooling2D, Flatten, Input, add
 from tensorflow.keras import Model
 

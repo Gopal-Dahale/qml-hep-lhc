@@ -187,6 +187,13 @@ def main():
     # Optimizer
     optimizer = getattr(tf.keras.optimizers, args.optimizer)
 
+    # Other hyperparameters
+    accuracy = args.accuracy
+    batch_size = args.batch_size
+    epochs = args.epochs
+    validation_split = args.validation_split
+    num_workers = args.num_workers
+
     # Learning rates
     INIT_LR = args.learning_rate
     MAX_LR = 1e-2
@@ -198,13 +205,6 @@ def main():
                                               scale_fn=lambda x: 1 /
                                               (2.**(x - 1)),
                                               step_size=2 * steps_per_epoch)
-
-    # Other hyperparameters
-    accuracy = args.accuracy
-    batch_size = args.batch_size
-    epochs = args.epochs
-    validation_split = args.validation_split
-    num_workers = args.num_workers
 
     # Use hinge accuracy if hinge labels/loss are/is used (for binary classification)
     if args.hinge_labels or loss == "Hinge":
