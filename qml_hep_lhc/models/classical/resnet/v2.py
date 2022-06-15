@@ -1,12 +1,10 @@
-"""
-This implementation is based on https://www.geeksforgeeks.org/residual-networks-resnet-deep-learning/
-"""
 from qml_hep_lhc.models.classical.resnet.bottleneck import BottleneckResidual
 from tensorflow.keras.layers import Dense, Activation, AveragePooling2D, Flatten, Input, add, BatchNormalization
+from qml_hep_lhc.models.base_model import BaseModel
 from tensorflow.keras import Model
 
 
-class ResnetV2(Model):
+class ResnetV2(BaseModel):
     """
     Resent v2 model. Paper: https://arxiv.org/abs/1603.05027
     This implementation is based on https://www.geeksforgeeks.org/residual-networks-resnet-deep-learning/
@@ -132,3 +130,8 @@ class ResnetV2(Model):
     def build_graph(self):
         x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="ResnetV2")
+
+    @staticmethod
+    def add_to_argparse(parser):
+        parser.add_argument("--resnet-depth", "-rd", type=int, default=2)
+        return parser
