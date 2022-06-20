@@ -1,9 +1,6 @@
 from pathlib import Path
 from tqdm import tqdm
 from urllib.request import urlretrieve
-import tensorflow_quantum as tfq
-from qml_hep_lhc.data.utils.q_utils import binary_encoding, angle_encoding
-import numpy as np
 from tabulate import tabulate
 
 
@@ -35,18 +32,11 @@ class BaseDataModule():
         self.x_test = None
         self.y_test = None
 
-        # Set the quantum data files
-        self.q_dims = None
-        self.q_output_dims = None
-        self.q_mapping = None
-        self.qx_train = None
-        self.qx_test = None
-
         # Parse arguments
-        self._quantum = self.args.get("quantum", False)
-        self._binary_encoding = self.args.get("binary_encoding", False)
-        self._angle_encoding = self.args.get("angle_encoding", False)
-        self._threshold = self.args.get("threshold", 0.5)
+        self.batch_size = self.args.get("batch_size", 128)
+
+        # Percent of data to use for training and testing
+        self.percent_samples = self.args.get("percent_samples", 1.0)
 
     @classmethod
     def data_dirname(cls):
@@ -61,6 +51,15 @@ class BaseDataModule():
         """
         return Path(__file__).resolve().parents[2] / "datasets"
 
+    @staticmethod
+    def add_to_argparse(parser):
+        parser.add_argument("--batch-size", "-batch", type=int, default=128)
+        parser.add_argument("--percent-samples",
+                            "-per-samp",
+                            type=float,
+                            default=1.0)
+        return parser
+
     def config(self):
         """
         Return important settings of the classical dataset, which will be passed to instantiate models.
@@ -69,16 +68,6 @@ class BaseDataModule():
             "input_dims": self.dims,
             "output_dims": self.output_dims,
             "mapping": self.mapping
-        }
-
-    def q_data_config(self):
-        """
-        Return important settings of the quantum dataset, which will be passed to instantiate models.
-        """
-        return {
-            "input_dims": self.q_dims,
-            "output_dims": self.q_output_dims,
-            "mapping": self.q_mapping
         }
 
     def prepare_data(self):
@@ -94,57 +83,6 @@ class BaseDataModule():
         """
         pass
 
-    def encoding_data_to_quantum_circuit(self):
-        """
-        The function takes the training and test data and converts it into quantum circuits.
-        Two modes of operation: binary encoding and angle encoding. 
-        """
-        if self._quantum:
-            image_size = self.x_train.shape[
-                1:]  # (height, width, channels = 1)
-
-            # Encoding the data as quantum circuits
-
-            # The data is converted into a binary representation which
-            # is then encoded into a quantum circuit using NOT gates.
-            if self._binary_encoding:
-
-                # Convert the data to binary representation
-                self.qx_train = np.array(self.x_train > self._threshold,
-                                         dtype=np.float32)
-                self.qx_test = np.array(self.x_test > self._threshold,
-                                        dtype=np.float32)
-
-                # Encode the data into quantum circuits
-                self.qx_train = [
-                    binary_encoding(x, image_size) for x in self.qx_train
-                ]
-                self.qx_test = [
-                    binary_encoding(x, image_size) for x in self.qx_test
-                ]
-
-                self.q_dims = (image_size[0], image_size[1])  # (height, width)
-
-            # The data is is assumed to be in angle representation and then
-            # encoded into a quantum circuit using Rx gates.
-            elif self._angle_encoding:
-                self.qx_train = [
-                    angle_encoding(x, image_size) for x in self.x_train
-                ]
-                self.qx_test = [
-                    angle_encoding(x, image_size) for x in self.x_test
-                ]
-
-                self.q_dims = (1, image_size[0] * image_size[1]
-                               )  # (1, height*width)
-
-            # Convert these Cirq circuits to tensors for tfq
-            self.qx_train = tfq.convert_to_tensor(self.qx_train)
-            self.qx_test = tfq.convert_to_tensor(self.qx_test)
-
-            self.q_output_dims = (1, )  # Binary output
-            self.q_mapping = self.mapping  # The mapping is the same as the classical one
-
     def __repr__(self, name) -> str:
         """
         Print info about the dataset.
@@ -157,19 +95,15 @@ class BaseDataModule():
                 ["y", self.y_train.shape, self.y_test.shape, self.output_dims]]
 
         data = f"Dataset :{name}\n"
-        data += tabulate(rows, headers, tablefmt="fancy_grid") + "\n"
-
-        # Print quantum data if it exists
-        if self._quantum:
-            q_rows = [[
-                "QX", self.qx_train.shape, self.qx_test.shape, self.q_dims
-            ], [
-                "Qy", self.y_train.shape, self.y_test.shape, self.q_output_dims
-            ]]
-
-            data += "Quantum Dataset\n"
-            data += tabulate(q_rows, headers, tablefmt="fancy_grid") + "\n"
-
+        data += tabulate(rows, headers, tablefmt="fancy_grid") + "\n\n"
+        data += "Train images stats\n"
+        data += f"Min: {self.x_train.min():.2f}\n"
+        data += f"Max: {self.x_train.max():.2f}\n"
+        data += f"Mean: {self.x_train.mean():.2f}\n"
+        data += f"Std: {self.x_train.std():.2f}\n"
+        data += "Train labels stats\n"
+        data += f"Min: {self.y_train.min():.2f}\n"
+        data += f"Max: {self.y_train.max():.2f}\n"
         return data
 
 
@@ -189,8 +123,7 @@ class TqdmUpTo(tqdm):
         """
         if tsize is not None:
             self.total = tsize  # pylint: disable=attribute-defined-outside-init
-        self.update(blocks * bsize -
-                    self.n)  # will also set self.n = b * bsize
+        self.update(blocks * bsize - self.n)  # will also set self.n = b * bsize
 
 
 def _download_raw_dataset(url, filename):
