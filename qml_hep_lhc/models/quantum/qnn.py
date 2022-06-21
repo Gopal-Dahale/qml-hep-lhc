@@ -1,62 +1,101 @@
 from tensorflow.keras import Model, Input
 import sympy
-import tensorflow as tf
+from tensorflow import string
 import tensorflow_quantum as tfq
 import cirq
+from qml_hep_lhc.models.base_model import BaseModel
+import tensorflow_quantum
+from tensorflow.keras.layers import Layer, Flatten
+import numpy as np
+from qml_hep_lhc.encodings import AngleMap
+from tensorflow import random_uniform_initializer, Variable, constant, shape, repeat, tile, concat, gather
 
 
-class CircuitLayerBuilder():
-    """
-    Circuit Layer Builder
-    """
+class QLinear(Layer):
 
-    def __init__(self, data_qubits, readout):
-        self.data_qubits = data_qubits
-        self.readout = readout
+    def __init__(self, input_dim):
+        super(QLinear, self).__init__()
 
-    def add_layer(self, circuit, gate, prefix):
-        for i, qubit in enumerate(self.data_qubits):
-            symbol = sympy.Symbol(prefix + '-' + str(i))
-            circuit.append(gate(qubit, self.readout)**symbol)
+        # Prepare qubits
+        self.n_qubits = np.prod(input_dim)
+        self.qubits = cirq.GridQubit.rect(1, self.n_qubits)
+
+        self.readout = cirq.GridQubit(-1, -1)
+        self.observables = [cirq.Z(self.readout)]
+
+        var_symbols = sympy.symbols(f'qnn0:{2*self.n_qubits}')
+        self.var_symbols = np.asarray(var_symbols).reshape((self.n_qubits, 2))
+
+        in_symbols = sympy.symbols(f'x0:{self.n_qubits}')
+        self.in_symbols = np.asarray(in_symbols).reshape((self.n_qubits))
+
+    def build(self, input_shape):
+        circuit = cirq.Circuit()
+
+        # Prepare the readout qubit
+        circuit.append(cirq.X(self.readout))
+        circuit.append(cirq.H(self.readout))
+
+        fm = AngleMap()
+        circuit += fm.build(self.qubits, self.in_symbols)
+
+        for i, qubit in enumerate(self.qubits):
+            circuit.append(cirq.XX(qubit, self.readout)**self.var_symbols[i, 0])
+        for i, qubit in enumerate(self.qubits):
+            circuit.append(cirq.ZZ(qubit, self.readout)**self.var_symbols[i, 1])
+
+        # Finally, prepare the readout qubit.
+        circuit.append(cirq.H(self.readout))
+
+        self.var_symbols = list(self.var_symbols.flat)
+        self.in_symbols = list(self.in_symbols.flat)
+
+        var_init = random_uniform_initializer(minval=-np.pi / 2,
+                                              maxval=np.pi / 2)
+        self.theta = Variable(initial_value=var_init(
+            shape=(1, len(self.var_symbols)), dtype="float32"),
+                              trainable=True,
+                              name="thetas")
+
+        # Define explicit symbol order
+        symbols = [str(symb) for symb in self.var_symbols + self.in_symbols]
+        self.indices = constant([symbols.index(a) for a in sorted(symbols)])
+
+        self.empty_circuit = tfq.convert_to_tensor([cirq.Circuit()])
+        self.computation_layer = tfq.layers.ControlledPQC(
+            circuit, self.observables)
+
+    def call(self, input_tensor):
+        batch_dim = shape(input_tensor)[0]
+
+        tiled_up_circuits = repeat(self.empty_circuit,
+                                   repeats=batch_dim,
+                                   name="tiled_up_circuits")
+        tiled_up_thetas = tile(self.theta,
+                               multiples=[batch_dim, 1],
+                               name="tiled_up_thetas")
+        joined_vars = concat([tiled_up_thetas, input_tensor], axis=-1)
+        joined_vars = gather(joined_vars,
+                             self.indices,
+                             axis=-1,
+                             name='joined_vars')
+        out = self.computation_layer([tiled_up_circuits, joined_vars])
+        return out
 
 
-class QNN(Model):
+class QNN(BaseModel):
     """
     Quantum Neural Network.
     This implementation is based on https://www.tensorflow.org/quantum/tutorials/mnist
     """
 
     def __init__(self, data_config, args=None):
-        super().__init__()
+        super().__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Data config
         self.input_dim = data_config["input_dims"]
-
-        # Prepare qubits
-        data_qubits = cirq.GridQubit.rect(self.input_dim[0], self.input_dim[1])
-        readout = cirq.GridQubit(-1, -1)
-        circuit = cirq.Circuit()
-
-        # Prepare the readout qubit
-        circuit.append(cirq.X(readout))
-        circuit.append(cirq.H(readout))
-
-        builder = CircuitLayerBuilder(data_qubits=data_qubits, readout=readout)
-
-        # Then add layers (experiment by adding more).
-        builder.add_layer(circuit, cirq.XX, "xx1")
-        builder.add_layer(circuit, cirq.ZZ, "zz1")
-
-        # Finally, prepare the readout qubit.
-        circuit.append(cirq.H(readout))
-
-        self.model_circuit = circuit
-        self.model_readout = cirq.Z(readout)
-
-        # The PQC layer returns the expected value of the readout gate, range [-1,1].
-        self.expectation_layer = tfq.layers.PQC(self.model_circuit,
-                                                operators=self.model_readout)
+        self.qlinear = QLinear(self.input_dim)
 
     def call(self, input_tensor):
         """
@@ -68,9 +107,15 @@ class QNN(Model):
         Returns:
           The expectation of the input tensor.
         """
-        expectation = self.expectation_layer(input_tensor)
-        return expectation
+        x = Flatten()(input_tensor)
+        out = self.qlinear(x)
+        return out
 
     def build_graph(self):
-        x = Input(shape=(), dtype=tf.string)
+        # x = Input(shape=(), dtype=string)
+        x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="QNN")
+
+    @staticmethod
+    def add_to_argparse(parser):
+        return parser
