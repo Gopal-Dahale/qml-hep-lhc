@@ -9,25 +9,32 @@ from tensorflow.keras.layers import Layer, Flatten
 import numpy as np
 from qml_hep_lhc.encodings import AngleMap
 from tensorflow import random_uniform_initializer, Variable, constant, shape, repeat, tile, concat, gather
+from qml_hep_lhc.utils import _import_class
 
 
 class QLinear(Layer):
 
-    def __init__(self, input_dim):
+    def __init__(self, input_dim, fm_class):
         super(QLinear, self).__init__()
 
-        # Prepare qubits
-        self.n_qubits = np.prod(input_dim)
-        self.qubits = cirq.GridQubit.rect(1, self.n_qubits)
+        self.dim = np.prod(input_dim)
+        self.fm_class = fm_class
 
+        # Prepare qubits
+        self.n_qubits = self.dim
+
+        if self.fm_class == 'AmplitudeMap':
+            self.n_qubits = int(np.log2(self.dim))
+
+        self.qubits = cirq.GridQubit.rect(1, self.n_qubits)
         self.readout = cirq.GridQubit(-1, -1)
         self.observables = [cirq.Z(self.readout)]
 
         var_symbols = sympy.symbols(f'qnn0:{2*self.n_qubits}')
         self.var_symbols = np.asarray(var_symbols).reshape((self.n_qubits, 2))
 
-        in_symbols = sympy.symbols(f'x0:{self.n_qubits}')
-        self.in_symbols = np.asarray(in_symbols).reshape((self.n_qubits))
+        in_symbols = sympy.symbols(f'x0:{self.dim}')
+        self.in_symbols = np.asarray(in_symbols).reshape((self.dim))
 
     def build(self, input_shape):
         circuit = cirq.Circuit()
@@ -36,7 +43,7 @@ class QLinear(Layer):
         circuit.append(cirq.X(self.readout))
         circuit.append(cirq.H(self.readout))
 
-        fm = AngleMap()
+        fm = _import_class(f"qml_hep_lhc.encodings.{self.fm_class}")()
         circuit += fm.build(self.qubits, self.in_symbols)
 
         for i, qubit in enumerate(self.qubits):
@@ -95,7 +102,11 @@ class QNN(BaseModel):
 
         # Data config
         self.input_dim = data_config["input_dims"]
-        self.qlinear = QLinear(self.input_dim)
+        self.n_qubits = np.prod(self.input_dim)
+        fm_class = self.args.get("feature_map")
+        if fm_class is None:
+            fm_class = "AngleMap"
+        self.qlinear = QLinear(self.input_dim, fm_class)
 
     def call(self, input_tensor):
         """
