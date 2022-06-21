@@ -1,53 +1,109 @@
 from tensorflow.keras import Model, Input
-from tensorflow.keras.layers import Layer
-import tensorflow_quantum as tfq
-import tensorflow as tf
+from tensorflow.keras.layers import Layer, Flatten
 import sympy
 import cirq
 from qml_hep_lhc.models.quantum.utils import one_qubit_unitary
+from qml_hep_lhc.models.base_model import BaseModel
+import tensorflow_quantum as tfq
+import numpy as np
+from qml_hep_lhc.encodings import AngleMap
+from qml_hep_lhc.models.quantum.utils import one_qubit_unitary
+from tensorflow import Variable, random_uniform_initializer, constant, shape, repeat, tile, concat, gather
 
 
-class QCNNCong(Model):
+class QCNN(Layer):
+
+    def __init__(self, input_dim):
+        super(QCNN, self).__init__()
+
+        # Prepare qubits
+        self.n_qubits = np.prod(input_dim)
+        self.qubits = cirq.GridQubit.rect(1, self.n_qubits)
+        self.observables = [cirq.Z(self.qubits[-1])]
+
+        var_symbols = sympy.symbols(f'qnn0:{63}')
+        self.var_symbols = np.asarray(var_symbols).reshape((63))
+
+        in_symbols = sympy.symbols(f'x0:{self.n_qubits}')
+        self.in_symbols = np.asarray(in_symbols).reshape((self.n_qubits))
+
+    def build(self, input_shape):
+
+        circuit = cirq.Circuit()
+
+        fm = AngleMap()
+        circuit += fm.build(self.qubits, self.in_symbols)
+
+        # First convolution layer with pooling layer
+        # Reduces 16 qubits to 8 qubits
+        circuit += quantum_conv_circuit(self.qubits, self.var_symbols[0:15])
+        circuit += quantum_pool_circuit(self.qubits[:8], self.qubits[8:],
+                                        self.var_symbols[15:21])
+
+        # Second convolution layer with pooling layer
+        # Reduces 8 qubits to 4 qubits
+        circuit += quantum_conv_circuit(self.qubits[8:],
+                                        self.var_symbols[21:36])
+        circuit += quantum_pool_circuit(self.qubits[8:12], self.qubits[12:],
+                                        self.var_symbols[36:42])
+
+        # Final convoluation layer with pooling layer
+        # Reduces 4 qubits to 1
+        circuit += quantum_conv_circuit(self.qubits[12:],
+                                        self.var_symbols[42:57])
+        circuit += quantum_pool_circuit(self.qubits[12:15], [self.qubits[15]],
+                                        self.var_symbols[57:63])
+
+        self.var_symbols = list(self.var_symbols.flat)
+        self.in_symbols = list(self.in_symbols.flat)
+
+        var_init = random_uniform_initializer(minval=-np.pi / 2,
+                                              maxval=np.pi / 2)
+        self.theta = Variable(initial_value=var_init(
+            shape=(1, len(self.var_symbols)), dtype="float32"),
+                              trainable=True,
+                              name="thetas")
+
+        # Define explicit symbol order
+        symbols = [str(symb) for symb in self.var_symbols + self.in_symbols]
+        self.indices = constant([symbols.index(a) for a in sorted(symbols)])
+
+        self.cluster_circuit = tfq.convert_to_tensor(
+            [cluster_state_circuit(self.qubits)])
+        self.computation_layer = tfq.layers.ControlledPQC(
+            circuit, self.observables)
+
+    def call(self, input_tensor):
+        batch_dim = shape(input_tensor)[0]
+
+        tiled_up_circuits = repeat(self.cluster_circuit,
+                                   repeats=batch_dim,
+                                   name="tiled_up_circuits")
+        tiled_up_thetas = tile(self.theta,
+                               multiples=[batch_dim, 1],
+                               name="tiled_up_thetas")
+        joined_vars = concat([tiled_up_thetas, input_tensor], axis=-1)
+        joined_vars = gather(joined_vars,
+                             self.indices,
+                             axis=-1,
+                             name='joined_vars')
+        out = self.computation_layer([tiled_up_circuits, joined_vars])
+        return out
+
+
+class QCNNCong(BaseModel):
     """
     Quantum Convolutional Neural Network.
     This implementation is based on https://www.tensorflow.org/quantum/tutorials/qcnn
     """
+
     def __init__(self, data_config, args=None):
-        super().__init__()
+        super().__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Data config
         self.input_dim = data_config["input_dims"]
-
-        # Prepare qubits
-        qubits = cirq.GridQubit.rect(1, self.input_dim[0] * self.input_dim[1])
-        self.model_readout = cirq.Z(qubits[-1])
-
-        circuit = cirq.Circuit()
-        symbols = sympy.symbols('qconv0:63')
-
-        # First convolution layer with pooling layer
-        # Reduces 16 qubits to 8 qubits
-        circuit += quantum_conv_circuit(qubits, symbols[0:15])
-        circuit += quantum_pool_circuit(qubits[:8], qubits[8:], symbols[15:21])
-
-        # Second convolution layer with pooling layer
-        # Reduces 8 qubits to 4 qubits
-        circuit += quantum_conv_circuit(qubits[8:], symbols[21:36])
-        circuit += quantum_pool_circuit(qubits[8:12], qubits[12:],
-                                        symbols[36:42])
-
-        # Final convoluation layer with pooling layer
-        # Reduces 4 qubits to 1
-        circuit += quantum_conv_circuit(qubits[12:], symbols[42:57])
-        circuit += quantum_pool_circuit(qubits[12:15], [qubits[15]],
-                                        symbols[57:63])
-
-        self.cluster_circuit = cluster_state_circuit(qubits)
-        self.model_circuit = circuit
-
-        self.expectation_layer = tfq.layers.PQC(self.model_circuit,
-                                                operators=self.model_readout)
+        self.qcnn = QCNN(self.input_dim)
 
     def call(self, input_tensor):
         """
@@ -60,14 +116,17 @@ class QCNNCong(Model):
         Returns:
           The expectation value of the cluster state.
         """
-        cluster_state = tfq.layers.AddCircuit()(input_tensor,
-                                                prepend=self.cluster_circuit)
-        expectation = self.expectation_layer(cluster_state)
-        return expectation
+        x = Flatten()(input_tensor)
+        out = self.qcnn(x)
+        return out
 
     def build_graph(self):
-        x = Input(shape=(), dtype=tf.string)
+        x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="QCNNCong")
+
+    @staticmethod
+    def add_to_argparse(parser):
+        return parser
 
 
 def cluster_state_circuit(bits):
