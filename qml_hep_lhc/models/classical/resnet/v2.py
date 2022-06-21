@@ -133,5 +133,5 @@ class ResnetV2(BaseModel):
 
     @staticmethod
     def add_to_argparse(parser):
-        parser.add_argument("--resnet-depth", "-rd", type=int, default=2)
+        parser.add_argument("--resnet-depth", "-rd", type=int, default=56)
         return parser
