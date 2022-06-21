@@ -2,7 +2,7 @@ from qml_hep_lhc.data.base_data_module import BaseDataModule, _download_raw_data
 import numpy as np
 from qml_hep_lhc.data.preprocessor import DataPreprocessor
 from sklearn.utils import shuffle
-from qml_hep_lhc.data.utils.utils import ELECTRON_PHOTON_DATASET_URL
+from qml_hep_lhc.data.constants import ELECTRON_PHOTON_DATASET_URL
 
 
 class ElectronPhoton(BaseDataModule):
@@ -14,7 +14,7 @@ class ElectronPhoton(BaseDataModule):
         super().__init__(args)
 
         self.dims = (32, 32, 1)
-        self.output_dims = (1, )
+        self.output_dims = (1,)
         self.mapping = range(2)
 
         # Parse args
@@ -34,44 +34,29 @@ class ElectronPhoton(BaseDataModule):
 
         # Shuffle the data
         self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
+        self.x_test, self.y_test = shuffle(self.x_test, self.y_test)
 
         # Extract percent_samples of data from x_train and x_test
         self.x_train = self.x_train[:int(self.percent_samples *
                                          len(self.x_train))]
         self.y_train = self.y_train[:int(self.percent_samples *
                                          len(self.y_train))]
-        self.x_test = self.x_test[:int(self.percent_samples *
-                                       len(self.x_test))]
-        self.y_test = self.y_test[:int(self.percent_samples *
-                                       len(self.y_test))]
+        self.x_test = self.x_test[:int(self.percent_samples * len(self.x_test))]
+        self.y_test = self.y_test[:int(self.percent_samples * len(self.y_test))]
 
     def setup(self):
 
         # Preprocess the data
-        preprocessor = DataPreprocessor(data={
-            "x_train": self.x_train,
-            "y_train": self.y_train,
-            "x_test": self.x_test,
-            "y_test": self.y_test
-        },
-                                        args=self.args,
-                                        data_config=self.config())
-
-        preprocessor.process()
-
-        # Set the data
-        self.x_train = preprocessor.x_train
-        self.y_train = preprocessor.y_train
-        self.x_test = preprocessor.x_test
-        self.y_test = preprocessor.y_test
-
+        preprocessor = DataPreprocessor(self.args)
+        self.x_train, self.y_train = preprocessor.process(
+            self.x_train, self.y_train, self.config())
+        self.x_test, self.y_test = preprocessor.process(self.x_test,
+                                                        self.y_test,
+                                                        self.config())
         # Set the configuration
         self.dims = preprocessor.dims
         self.output_dims = preprocessor.output_dims
         self.mapping = preprocessor.mapping
-
-        # Set the quantum data
-        self.encoding_data_to_quantum_circuit()
 
     def __repr__(self) -> str:
         return super().__repr__("Electron Photon")

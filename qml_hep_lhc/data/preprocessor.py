@@ -1,8 +1,9 @@
 import numpy as np
-import tensorflow as tf
-from sklearn.preprocessing import StandardScaler, normalize
+from sklearn.preprocessing import StandardScaler, normalize, MinMaxScaler
 from sklearn.decomposition import PCA
 from numba import njit, prange
+from tensorflow.image import resize, central_crop
+from tensorflow.keras.utils import to_categorical
 
 
 class DataPreprocessor():
@@ -10,94 +11,79 @@ class DataPreprocessor():
     Data Preprocessing Module
     """
 
-    def __init__(self, data, args, data_config) -> None:
+    def __init__(self, args=None) -> None:
 
         # Load the data and arguments
-        self.x_train = data["x_train"]
-        self.y_train = data["y_train"]
-        self.x_test = data["x_test"]
-        self.y_test = data["y_test"]
-        self.args = args
-
-        # Load the data config
-        self.dims = data_config["input_dims"]
-        self.output_dims = data_config["output_dims"]
-        self.mapping = data_config["mapping"]
+        self.args = args if args is not None else {}
 
         # Parse args
         self._labels_to_categorical = self.args.get("labels_to_categorical",
                                                     False)
         self._normalize = self.args.get("normalize", False)
         self._standardize = self.args.get("standardize", False)
+        self._min_max = self.args.get("min_max", False)
         self._resize = self.args.get("resize", None)
         self._binary_data = self.args.get("binary_data", None)
-        self._hinge_labels = self.args.get("hinge_labels", False)
         self._is_binary_data = self.args.get("is_binary_data", False)
         self._pca = self.args.get("pca", None)
         self._graph_conv = self.args.get("graph_conv", False)
         self._center_crop = self.args.get("center_crop", None)
 
-        # Handling binary data case for hinge labels
-        if self._is_binary_data is False:
-            if self._hinge_labels and self._binary_data is None:
-                raise ValueError("Hinge labels requires binary data")
         if self._is_binary_data:
             self._binary_data = None
 
-    def standardize(self):
+    def standardize(self, x):
         """
         Standardize features by removing the mean and scaling to unit variance.
         """
         print("Standardizing data...")
 
-        scaler = StandardScaler()
         img_size = self.dims
 
-        self.x_train = scaler.fit_transform(
-            self.x_train.reshape(-1, img_size[0] * img_size[1])).reshape(
-                -1, img_size[0], img_size[1])
-        self.x_test = scaler.transform(
-            self.x_test.reshape(-1, img_size[0] * img_size[1])).reshape(
-                -1, img_size[0], img_size[1])
+        x = x.reshape(-1, np.prod(img_size))
+        StandardScaler(copy=False).fit_transform(x)
+        x = x.reshape([-1] + list(img_size))
+        return x
 
-    def normalize(self):
+    def normalize(self, x):
         """
         Scale input vectors individually to unit norm (vector length).
         """
         print("Normalizing data...")
-
         img_size = self.dims
-        self.x_train = normalize(
-            self.x_train.reshape(-1, img_size[0] * img_size[1])).reshape(
-                -1, img_size[0], img_size[1])
-        self.x_test = normalize(
-            self.x_test.reshape(-1, img_size[0] * img_size[1])).reshape(
-                -1, img_size[0], img_size[1])
+        x = x.reshape(-1, np.prod(img_size))
+        normalize(x, copy=False)
+        x = x.reshape([-1] + list(img_size))
+        return x
 
-    def resize(self):
+    def min_max_scale(self, x):
+        print("Min-max scaling...")
+        img_size = self.dims
+        x = x.reshape(-1, np.prod(img_size))
+        MinMaxScaler((-np.pi, np.pi), copy=False).fit_transform(x)
+        x = x.reshape([-1] + list(img_size))
+        return x
+
+    def resize(self, x):
         """
         It resizes the training and testing data to the size specified in the constructor
         """
         print("Resizing data...")
-        self.x_train = tf.image.resize(self.x_train, self._resize).numpy()
-        self.x_test = tf.image.resize(self.x_test, self._resize).numpy()
-        self.dims = self.x_train.shape[1:]
+        x = resize(x, self._resize).numpy()
+        self.dims = x.shape[1:]
+        return x
 
-    def labels_to_categorical(self):
+    def labels_to_categorical(self, y):
         """
         It converts the labels to categorical data
         """
         print("Converting labels to categorical...")
 
-        self.y_train = tf.keras.utils.to_categorical(self.y_train,
-                                                     num_classes=len(
-                                                         self.mapping))
-        self.y_test = tf.keras.utils.to_categorical(self.y_test,
-                                                    num_classes=len(
-                                                        self.mapping))
-        self.output_dims = len(self.mapping)
+        y = to_categorical(y, num_classes=len(self.mapping))
+        self.output_dims = (len(self.mapping),)
+        return y
 
-    def binary_data(self):
+    def binary_data(self, x, y):
         """
         It takes the data and filters it so that only the data that contains binary classes
         """
@@ -110,23 +96,11 @@ class DataPreprocessor():
             d2 = self._binary_data[1]
 
             # Extract binary data
-            self.x_train, self.y_train = binary_filter(d1, d2, self.x_train,
-                                                       self.y_train)
-            self.x_test, self.y_test = binary_filter(d1, d2, self.x_test,
-                                                     self.y_test)
+            x, y = binary_filter(d1, d2, x, y)
             self.mapping = [d1, d2]
+        return x, y
 
-    def hinge_labels(self):
-        """
-        It converts the labels to hinge labels
-        """
-        print("Converting labels to hinge labels...")
-
-        self.y_train = 2 * self.y_train - 1
-        self.y_test = 2 * self.y_test - 1
-        self.output_dims = (1,)
-
-    def pca(self, n_components=16):
+    def pca(self, x, n_components=16):
         """
         Performs Principal component analysis (PCA) on the data.
 
@@ -136,21 +110,23 @@ class DataPreprocessor():
         """
         print("Performing PCA on data...")
 
+        sq_root = int(np.sqrt(n_components))
+        assert sq_root * sq_root == n_components, "Number of components must be a square"
+
         pca_obj = PCA(n_components)
-        pca_obj.fit(self.x_train.reshape(-1, self.dims[0] * self.dims[1]))
-        print("Cumulative sum for train:",
-              np.cumsum(pca_obj.explained_variance_ratio_ * 100)[-1])
-        self.x_train = pca_obj.transform(
-            self.x_train.reshape(-1, self.dims[0] * self.dims[1]))
+        x = x.reshape(-1, np.prod(self.dims))
 
-        pca_obj.fit(self.x_test.reshape(-1, self.dims[0] * self.dims[1]))
-        print("Cumulative sum for test:",
-              np.cumsum(pca_obj.explained_variance_ratio_ * 100)[-1])
-        self.x_test = pca_obj.transform(
-            self.x_test.reshape(-1, self.dims[0] * self.dims[1]))
-        self.dims = (n_components, 1)
+        pca_obj.fit(x)
+        cumsum = np.cumsum(pca_obj.explained_variance_ratio_ * 100)[-1]
+        print("Cumulative sum :", cumsum)
+        x = pca_obj.transform(x)
 
-    def graph_convolution(self):
+        x = x.reshape(-1, sq_root, sq_root, 1)
+
+        self.dims = (sq_root, sq_root, 1)
+        return x
+
+    def graph_convolution(self, x):
         print("Performing graph convolution...")
         m = self.dims[0]
         n = self.dims[1]
@@ -176,48 +152,88 @@ class DataPreprocessor():
         iterate(adj)
 
         # Perfrom graph convolution
-        self.x_train = self.x_train.reshape(-1, N).T
-        self.x_test = self.x_test.reshape(-1, N).T
+        x = x.reshape(-1, N).T
+        x = np.dot(adj, x).T.reshape(-1, m, n, 1)
+        return x
 
-        self.x_train = np.dot(adj, self.x_train).T.reshape(-1, m, n)
-        self.x_test = np.dot(adj, self.x_test).T.reshape(-1, m, n)
-
-    def center_crop(self, fraction=0.2):
+    def center_crop(self, x, fraction=0.2):
         print("Center cropping...")
-        self.x_train = tf.image.central_crop(self.x_train, fraction)
-        self.x_test = tf.image.central_crop(self.x_test, fraction)
-        self.dims = self.x_train.shape[1:]
+        x = central_crop(x, fraction).numpy()
+        self.dims = x.shape[1:]
+        return x
 
-    def process(self):
+    def process(self, x, y, config):
         """
         Data processing pipeline.
         """
+
+        self.dims = config['input_dims']
+        self.output_dims = config['output_dims']
+        self.mapping = config['mapping']
+
         # Add new axis
-        self.x_train, self.x_test = self.x_train[..., np.newaxis], self.x_test[
-            ..., np.newaxis]  # For resizing we need to add one more axis
+        x = x[..., np.newaxis]  # For resizing we need to add one more axis
 
         if self._binary_data and len(self._binary_data) == 2:
-            self.binary_data()
+            x, y = self.binary_data(x, y)
 
         if self._resize is not None and len(self._resize) == 2:
-            self.resize()
+            x = self.resize(x)
         if self._pca is not None:
-            self.pca(self._pca)
+            x = self.pca(x, self._pca)
         if self._center_crop:
-            self.center_crop(self._center_crop)
+            x = self.center_crop(x, self._center_crop)
 
         if self._standardize:
-            self.standardize()
+            x = self.standardize(x)
         if self._normalize:
-            self.normalize()
+            x = self.normalize(x)
+        if self._min_max:
+            x = self.min_max_scale(x)
 
         if self._labels_to_categorical:
-            self.labels_to_categorical()
-        if self._hinge_labels:
-            self.hinge_labels()
+            y = self.labels_to_categorical(y)
 
         if self._graph_conv:
-            self.graph_convolution()
+            x = self.graph_convolution(x)
+
+        return x, y
+
+    @staticmethod
+    def add_to_argparse(parser):
+        parser.add_argument("--labels-to-categorical",
+                            "-to-cat",
+                            action="store_true",
+                            default=False)
+        parser.add_argument("--normalize"
+                            "-nz",
+                            action="store_true",
+                            default=False)
+        parser.add_argument("--standardize",
+                            "-std",
+                            action="store_true",
+                            default=False)
+        parser.add_argument("--min-max",
+                            "-mm",
+                            action="store_true",
+                            default=False)
+        parser.add_argument("--resize",
+                            "-rz",
+                            nargs='+',
+                            type=int,
+                            default=None)
+        parser.add_argument("--binary-data",
+                            "-bd",
+                            nargs='+',
+                            type=int,
+                            default=None)
+        parser.add_argument("--pca", "-pca", type=int, default=None)
+        parser.add_argument("--graph-conv",
+                            "-gc",
+                            action="store_true",
+                            default=False)
+        parser.add_argument("--center-crop", "-cc", type=float, default=None)
+        return parser
 
 
 def binary_filter(d1, d2, x, y):
