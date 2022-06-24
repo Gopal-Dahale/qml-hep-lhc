@@ -2,6 +2,7 @@ import cirq
 from qml_hep_lhc.utils import _import_class
 import sympy as sp
 from functools import reduce
+import numpy as np
 
 
 class AmplitudeMap:
@@ -19,19 +20,13 @@ class AmplitudeMap:
         den_start = index_den
         den_end = index_den + 2**(s)
 
-        if ((den_end <= den_start) or (num_end <= num_start)):
+        if ((num_start >= num_end) or (den_start >= den_end)):
             return 0
 
-        res = [sp.Abs(x[i])**2 for i in range(num_start, num_end, 1)]
-        coeff = reduce(lambda m, n: m + n, res)
-        num_coeff = sp.sqrt(coeff)
+        num = sp.sqrt(np.sum(np.abs(x[index_num:index_num + 2**(s - 1)])**2))
+        den = sp.sqrt(np.sum(np.abs(x[index_den:index_den + 2**(s)])**2))
 
-        res = [sp.Abs(x[i])**2 for i in range(den_start, den_end, 1)]
-        coeff = reduce(lambda m, n: m + n, res)
-        den_coeff = sp.sqrt(coeff)
-
-        beta = 2 * sp.asin(num_coeff / den_coeff)
-
+        beta = 2 * sp.asin(num / den) * sp.pi
         return beta
 
     def _locate_x(self, curr_j, prev_j, length):
@@ -42,8 +37,9 @@ class AmplitudeMap:
     def build(self, qubits, symbols):
         n = len(qubits)
         ae_ops = []
+        count = 0
         ae_ops += [cirq.ry(self._beta(n, 1, symbols))(qubits[0])]
-
+        count += 1
         for i in range(1, n):
             # We can have at most i control bits
             # Total possibilities is therefore 2^i
@@ -55,17 +51,18 @@ class AmplitudeMap:
                     sub_gate=cirq.ry(self._beta(n - i, controls, symbols)),
                     num_controls=len(control_qubits) - 1)(*control_qubits)
             ]
-
+            count += 1
             for j in range(1, controls):
                 for loc in self._locate_x(controls - j - 1, controls - j, i):
                     ae_ops += [cirq.X(qubits[loc])]
 
-                    ae_ops += [
-                        cirq.ControlledGate(sub_gate=cirq.ry(
-                            self._beta(n - i, controls - j, symbols)),
-                                            num_controls=len(control_qubits) -
-                                            1)(*control_qubits)
-                    ]
+                ae_ops += [
+                    cirq.ControlledGate(sub_gate=cirq.ry(
+                        self._beta(n - i, controls - j, symbols)),
+                                        num_controls=len(control_qubits) -
+                                        1)(*control_qubits)
+                ]
+                count += 1
 
             for k in range(i):
                 ae_ops += [cirq.X(qubits[k])]
