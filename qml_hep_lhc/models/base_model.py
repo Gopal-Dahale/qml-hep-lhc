@@ -1,5 +1,4 @@
 from tensorflow.keras import Model, losses, optimizers
-from tensorflow_addons.optimizers import CyclicalLearningRate
 from tensorflow.keras.metrics import AUC
 from qml_hep_lhc.utils import _import_class
 from qml_hep_lhc.models.quantum.metrics import qAUC, custom_accuracy
@@ -18,16 +17,10 @@ class BaseModel(Model):
         # Optimizer
         self.optimizer = getattr(optimizers, self.args.get('optimizer', 'Adam'))
 
-        self.lr = self.args.get('learning_rate', 0.001)
-        self.max_lr = 1e-2
+        self.lr = self.args.get('learning_rate', 0.002)
 
         # Learning rate scheduler
         self.batch_size = self.args.get('batch_size', 128)
-        steps_per_epoch = self.batch_size
-        self.clr = CyclicalLearningRate(initial_learning_rate=self.lr,
-                                        maximal_learning_rate=self.max_lr,
-                                        scale_fn=lambda x: 1 / (2.**(x - 1)),
-                                        step_size=2 * steps_per_epoch)
 
         if self.args.get('use_quantum', False):
             print("use quantum")
@@ -38,9 +31,11 @@ class BaseModel(Model):
             self.accuracy = ['accuracy', AUC()]
 
     def compile(self):
-        super(BaseModel, self).compile(loss=self.loss_fn(),
-                                       metrics=self.accuracy,
-                                       optimizer=self.optimizer(self.clr))
+        super(BaseModel,
+              self).compile(loss=self.loss_fn(),
+                            metrics=self.accuracy,
+                            optimizer=self.optimizer(learning_rate=self.lr),
+                            run_eagerly=True)
 
     def fit(self, data, callbacks):
         x = data.x_train
