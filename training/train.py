@@ -4,6 +4,7 @@ import wandb
 from argparse import ArgumentParser
 from os import path, makedirs
 from qml_hep_lhc.utils import _import_class
+from tensorflow.keras.callbacks import ReduceLROnPlateau
 
 
 def _setup_parser():
@@ -93,6 +94,13 @@ def _setup_callbacks(args):
         save_freq='epoch')
 
     callbacks.append(model_checkpoint_callback)
+
+    # LR Scheduler callback
+    lr_scheduler_callback = ReduceLROnPlateau(monitor='val_loss',
+                                              factor=0.1,
+                                              patience=5,
+                                              min_lr=1e-6)
+    # callbacks.append(lr_scheduler_callback)
     return callbacks
 
 
