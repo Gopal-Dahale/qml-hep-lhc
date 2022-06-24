@@ -1,7 +1,5 @@
 import cirq
-from qml_hep_lhc.utils import _import_class
 import sympy as sp
-from functools import reduce
 import numpy as np
 
 

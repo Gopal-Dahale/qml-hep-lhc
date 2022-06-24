@@ -4,7 +4,7 @@ import sympy
 import cirq
 import numpy as np
 from qml_hep_lhc.models.quantum.utils import one_qubit_unitary
-from tensorflow.math import atan, square
+from tensorflow.math import square
 from qml_hep_lhc.models.base_model import BaseModel
 from tensorflow import random_uniform_initializer, Variable, ones, constant, repeat, tile, shape, concat, gather
 import tensorflow_quantum as tfq

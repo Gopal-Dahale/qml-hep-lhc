@@ -1,13 +1,10 @@
 from tensorflow.keras import Model, Input
 import sympy
-from tensorflow import string
 import tensorflow_quantum as tfq
 import cirq
 from qml_hep_lhc.models.base_model import BaseModel
-import tensorflow_quantum
 from tensorflow.keras.layers import Layer, Flatten
 import numpy as np
-from qml_hep_lhc.encodings import AngleMap
 from tensorflow import random_uniform_initializer, Variable, constant, shape, repeat, tile, concat, gather
 from qml_hep_lhc.utils import _import_class
 import re
@@ -15,7 +12,6 @@ from sympy.core import numbers as sympy_numbers
 import numbers
 import tensorflow as tf
 from sympy.functions.elementary.trigonometric import TrigonometricFunction
-from tensorflow_quantum.python import util
 import sympy as sp
 
 

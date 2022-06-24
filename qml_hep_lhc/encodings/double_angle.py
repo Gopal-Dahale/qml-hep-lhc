@@ -1,6 +1,4 @@
-import numpy as np
 import cirq
-from tensorflow_quantum import convert_to_tensor
 
 
 class DoubleAngleMap:
