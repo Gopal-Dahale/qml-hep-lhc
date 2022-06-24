@@ -21,7 +21,7 @@ class QCNN(Layer):
         self.qubits = cirq.GridQubit.rect(1, self.n_qubits)
         self.observables = [cirq.Z(self.qubits[-1])]
 
-        var_symbols = sympy.symbols(f'qnn0:{63}')
+        var_symbols = sympy.symbols(f'θ0:{63}')
         self.var_symbols = np.asarray(var_symbols).reshape((63))
 
         in_symbols = sympy.symbols(f'x0:{self.n_qubits}')
@@ -30,7 +30,7 @@ class QCNN(Layer):
     def build(self, input_shape):
 
         circuit = cirq.Circuit()
-
+        circuit += cluster_state_circuit(self.qubits)
         fm = AngleMap()
         circuit += fm.build(self.qubits, self.in_symbols)
 
@@ -68,15 +68,13 @@ class QCNN(Layer):
         symbols = [str(symb) for symb in self.var_symbols + self.in_symbols]
         self.indices = constant([symbols.index(a) for a in sorted(symbols)])
 
-        self.cluster_circuit = tfq.convert_to_tensor(
-            [cluster_state_circuit(self.qubits)])
+        self.empty_circuit = tfq.convert_to_tensor([cirq.Circuit()])
         self.computation_layer = tfq.layers.ControlledPQC(
             circuit, self.observables)
 
     def call(self, input_tensor):
         batch_dim = shape(input_tensor)[0]
-
-        tiled_up_circuits = repeat(self.cluster_circuit,
+        tiled_up_circuits = repeat(self.empty_circuit,
                                    repeats=batch_dim,
                                    name="tiled_up_circuits")
         tiled_up_thetas = tile(self.theta,
@@ -93,9 +91,9 @@ class QCNN(Layer):
 
 class QCNNCong(BaseModel):
     """
-    Quantum Convolutional Neural Network.
-    This implementation is based on https://www.tensorflow.org/quantum/tutorials/qcnn
-    """
+		Quantum Convolutional Neural Network.
+		This implementation is based on https://www.tensorflow.org/quantum/tutorials/qcnn
+		"""
 
     def __init__(self, data_config, args=None):
         super().__init__(args)
@@ -107,15 +105,15 @@ class QCNNCong(BaseModel):
 
     def call(self, input_tensor):
         """
-        `call` takes in an input tensor, adds the cluster circuit to it, and then passes the result to
-        the expectation layer
-        
-        Args:
-          input_tensor: The input tensor to the layer.
-        
-        Returns:
-          The expectation value of the cluster state.
-        """
+				`call` takes in an input tensor, adds the cluster circuit to it, and then passes the result to
+				the expectation layer
+				
+				Args:
+					input_tensor: The input tensor to the layer.
+				
+				Returns:
+					The expectation value of the cluster state.
+				"""
         x = Flatten()(input_tensor)
         out = self.qcnn(x)
         return out
@@ -131,14 +129,14 @@ class QCNNCong(BaseModel):
 
 def cluster_state_circuit(bits):
     """
-    Return a cluster state on the qubits in `bits`
-    
-    Args:
-      bits: The qubits to use in the circuit.
-    
-    Returns:
-      A circuit that creates a cluster state.
-    """
+		Return a cluster state on the qubits in `bits`
+		
+		Args:
+			bits: The qubits to use in the circuit.
+		
+		Returns:
+			A circuit that creates a cluster state.
+		"""
     circuit = cirq.Circuit()
     circuit.append(cirq.H.on_each(bits))
     for this_bit, next_bit in zip(bits, bits[1:] + [bits[0]]):
@@ -161,17 +159,17 @@ def two_qubit_unitary(bits, symbols):
 
 def two_qubit_pool(source_qubit, sink_qubit, symbols):
     """
-    Make a Cirq circuit to do a parameterized 'pooling' operation, which
-    attempts to reduce entanglement down from two qubits to just one.
-    
-    Args:
-      source_qubit: the qubit that is being measured
-      sink_qubit: the qubit that will be measured
-      symbols: a list of 6 symbols, each of which is either 'X', 'Y', or 'Z'.
-    
-    Returns:
-      A circuit that performs a two-qubit pooling operation.
-    """
+		Make a Cirq circuit to do a parameterized 'pooling' operation, which
+		attempts to reduce entanglement down from two qubits to just one.
+		
+		Args:
+			source_qubit: the qubit that is being measured
+			sink_qubit: the qubit that will be measured
+			symbols: a list of 6 symbols, each of which is either 'X', 'Y', or 'Z'.
+		
+		Returns:
+			A circuit that performs a two-qubit pooling operation.
+		"""
     pool_circuit = cirq.Circuit()
     sink_basis_selector = one_qubit_unitary(sink_qubit, symbols[0:3])
     source_basis_selector = one_qubit_unitary(source_qubit, symbols[3:6])
@@ -184,18 +182,18 @@ def two_qubit_pool(source_qubit, sink_qubit, symbols):
 
 def quantum_conv_circuit(bits, symbols):
     """
-    Quantum Convolution Layer. Return a Cirq circuit with the 
-    cascade of `two_qubit_unitary` applied to all pairs of 
-    qubits in `bits`.
-    
-    Args:
-      bits: a list of qubits
-      symbols: a list of symbols that will be used to represent the qubits.
-    
-    Returns:
-      A circuit with the two qubit unitary applied to the first two qubits, then the second two qubits,
-    then the third two qubits, then the first and last qubits.
-    """
+		Quantum Convolution Layer. Return a Cirq circuit with the 
+		cascade of `two_qubit_unitary` applied to all pairs of 
+		qubits in `bits`.
+		
+		Args:
+			bits: a list of qubits
+			symbols: a list of symbols that will be used to represent the qubits.
+		
+		Returns:
+			A circuit with the two qubit unitary applied to the first two qubits, then the second two qubits,
+		then the third two qubits, then the first and last qubits.
+		"""
     circuit = cirq.Circuit()
     for first, second in zip(bits[0::2], bits[1::2]):
         circuit += two_qubit_unitary([first, second], symbols)
@@ -206,18 +204,18 @@ def quantum_conv_circuit(bits, symbols):
 
 def quantum_pool_circuit(source_bits, sink_bits, symbols):
     """
-    A layer that specifies a quantum pooling operation.
-    A Quantum pool tries to learn to pool the relevant information from two
-    qubits onto 1.
-    
-    Args:
-      source_bits: the qubits that will be used as the input to the pooling layer
-      sink_bits: the qubits that will be measured at the end of the circuit
-      symbols: a list of symbols that will be used to label the qubits in the circuit.
-    
-    Returns:
-      A circuit with the two qubit pool gates applied to each pair of source and sink bits.
-    """
+		A layer that specifies a quantum pooling operation.
+		A Quantum pool tries to learn to pool the relevant information from two
+		qubits onto 1.
+		
+		Args:
+			source_bits: the qubits that will be used as the input to the pooling layer
+			sink_bits: the qubits that will be measured at the end of the circuit
+			symbols: a list of symbols that will be used to label the qubits in the circuit.
+		
+		Returns:
+			A circuit with the two qubit pool gates applied to each pair of source and sink bits.
+		"""
     circuit = cirq.Circuit()
     for source, sink in zip(source_bits, sink_bits):
         circuit += two_qubit_pool(source, sink, symbols)
