@@ -40,28 +40,28 @@ class QLinear(Layer):
         self.in_symbols = np.asarray(in_symbols).reshape((self.dim))
 
     def build(self, input_shape):
-        self.data_circuit = cirq.Circuit()
-        self.model_circuit = cirq.Circuit()
+        data_circuit = cirq.Circuit()
+        model_circuit = cirq.Circuit()
 
         # Prepare the readout qubit
-        self.model_circuit.append(cirq.X(self.readout))
-        self.model_circuit.append(cirq.H(self.readout))
+        model_circuit.append(cirq.X(self.readout))
+        model_circuit.append(cirq.H(self.readout))
 
         self.fm = _import_class(f"qml_hep_lhc.encodings.{self.fm_class}")()
-        self.data_circuit += self.fm.build(self.qubits, self.in_symbols)
+        data_circuit += self.fm.build(self.qubits, self.in_symbols)
 
         for i, qubit in enumerate(self.qubits):
-            self.model_circuit.append(
+            model_circuit.append(
                 cirq.XX(qubit, self.readout)**self.var_symbols[i, 0])
         for i, qubit in enumerate(self.qubits):
-            self.model_circuit.append(
+            model_circuit.append(
                 cirq.ZZ(qubit, self.readout)**self.var_symbols[i, 1])
         for i, qubit in enumerate(self.qubits):
-            self.model_circuit.append(
+            model_circuit.append(
                 cirq.XX(qubit, self.readout)**self.var_symbols[i, 2])
 
         # Finally, prepare the readout qubit.
-        self.model_circuit.append(cirq.H(self.readout))
+        model_circuit.append(cirq.H(self.readout))
 
         self.var_symbols = list(self.var_symbols.flat)
         self.in_symbols = list(self.in_symbols.flat)
@@ -73,8 +73,8 @@ class QLinear(Layer):
                               trainable=True,
                               name="thetas")
 
-        data_circuit_flattened, expr_map = cirq.flatten(self.data_circuit)
-        self.data_circuit = data_circuit_flattened
+        data_circuit_flattened, expr_map = cirq.flatten(data_circuit)
+        data_circuit = data_circuit_flattened
         self.raw_symbols = symbols_in_expr_map(expr_map)
         self.expr = list(expr_map)
 
@@ -85,8 +85,9 @@ class QLinear(Layer):
         self.input_resolver = resolve_formulas(self.expr, self.raw_symbols)
 
         self.empty_circuit = tfq.convert_to_tensor([cirq.Circuit()])
+        self.circuit = data_circuit + model_circuit
         self.computation_layer = tfq.layers.ControlledPQC(
-            self.data_circuit + self.model_circuit, self.observables)
+            self.circuit, self.observables)
 
     def call(self, input_tensor):
         resolved_inputs = self.input_resolver(input_tensor)
@@ -119,10 +120,10 @@ class QNN(BaseModel):
         # Data config
         self.input_dim = data_config["input_dims"]
         self.n_qubits = np.prod(self.input_dim)
-        fm_class = self.args.get("feature_map")
-        if fm_class is None:
-            fm_class = "AngleMap"
-        self.qlinear = QLinear(self.input_dim, fm_class)
+        self.fm_class = self.args.get("feature_map")
+        if self.fm_class is None:
+            self.fm_class = "AngleMap"
+        self.qlinear = QLinear(self.input_dim, self.fm_class)
 
     def call(self, input_tensor):
         """
@@ -142,6 +143,9 @@ class QNN(BaseModel):
         # x = Input(shape=(), dtype=string)
         x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="QNN")
+
+    def get_circuit(self):
+        return self.qlinear.circuit
 
     @staticmethod
     def add_to_argparse(parser):
