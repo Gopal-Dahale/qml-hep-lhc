@@ -2,6 +2,7 @@ from pathlib import Path
 from tqdm import tqdm
 from urllib.request import urlretrieve
 from tabulate import tabulate
+import os
 
 
 class BaseDataModule():
@@ -19,9 +20,9 @@ class BaseDataModule():
 
         # Create data directories if does not exist
         if not self.data_dir.exists():
-            self.data_dir.mkdir()
+            os.makedirs(self.data_dir)
         if not self.processed_data_dir.exists():
-            self.processed_data_dir.mkdir()
+            os.makedirs(self.processed_data_dir)
 
         # Set the data files
         self.dims = None
@@ -49,7 +50,7 @@ class BaseDataModule():
         Returns:
           The path to the datasets folder.
         """
-        return Path(__file__).resolve().parents[2] / "datasets"
+        return Path(__file__).resolve().parents[3] / "datasets"
 
     @staticmethod
     def add_to_argparse(parser):
