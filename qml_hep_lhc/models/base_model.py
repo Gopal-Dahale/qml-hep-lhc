@@ -66,10 +66,7 @@ class BaseModel(Model):
     @staticmethod
     def add_to_argparse(parser):
         parser.add_argument("--optimizer", "-opt", type=str, default="Adam")
-        parser.add_argument("--learning-rate",
-                            "-lr",
-                            type=float,
-                            default=0.0001)
+        parser.add_argument("--learning-rate", "-lr", type=float, default=0.01)
         parser.add_argument("--loss",
                             "-l",
                             type=str,

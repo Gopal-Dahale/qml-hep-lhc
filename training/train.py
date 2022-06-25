@@ -148,6 +148,7 @@ def _setup_callbacks(args, config, data):
     lr_scheduler_callback = ReduceLROnPlateau(monitor='val_loss',
                                               factor=0.1,
                                               patience=5,
+                                              min_delta=0.001,
                                               min_lr=1e-6)
 
     callbacks.append(lr_scheduler_callback)
