@@ -12,6 +12,8 @@ class MNIST(BaseDataModule):
     def __init__(self, args):
         super().__init__(args)
 
+        self.classes = list(range(10))
+
         self.dims = (28, 28, 1)
         self.output_dims = (1,)
         self.mapping = list(range(10))
@@ -43,14 +45,16 @@ class MNIST(BaseDataModule):
         # Preprocess the data
         preprocessor = DataPreprocessor(self.args)
         self.x_train, self.y_train = preprocessor.process(
-            self.x_train, self.y_train, self.config())
+            self.x_train, self.y_train, self.config(), self.classes)
         self.x_test, self.y_test = preprocessor.process(self.x_test,
                                                         self.y_test,
-                                                        self.config())
+                                                        self.config(),
+                                                        self.classes)
         # Set the configuration
         self.dims = preprocessor.dims
         self.output_dims = preprocessor.output_dims
         self.mapping = preprocessor.mapping
+        self.classes = preprocessor.classes
 
     def __repr__(self) -> str:
         return super().__repr__("MNIST")

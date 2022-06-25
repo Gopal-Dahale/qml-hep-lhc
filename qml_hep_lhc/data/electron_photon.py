@@ -15,7 +15,9 @@ class ElectronPhoton(BaseDataModule):
 
         self.dims = (32, 32, 1)
         self.output_dims = (1,)
-        self.mapping = range(2)
+        self.mapping = list(range(2))
+
+        self.classes = ['Photon', 'Electron']
 
         # Parse args
         self.args['is_binary_data'] = True
@@ -49,14 +51,16 @@ class ElectronPhoton(BaseDataModule):
         # Preprocess the data
         preprocessor = DataPreprocessor(self.args)
         self.x_train, self.y_train = preprocessor.process(
-            self.x_train, self.y_train, self.config())
+            self.x_train, self.y_train, self.config(), self.classes)
         self.x_test, self.y_test = preprocessor.process(self.x_test,
                                                         self.y_test,
-                                                        self.config())
+                                                        self.config(),
+                                                        self.classes)
         # Set the configuration
         self.dims = preprocessor.dims
         self.output_dims = preprocessor.output_dims
         self.mapping = preprocessor.mapping
+        self.classes = preprocessor.classes
 
     def __repr__(self) -> str:
         return super().__repr__("Electron Photon")

@@ -98,6 +98,7 @@ class DataPreprocessor():
             # Extract binary data
             x, y = binary_filter(d1, d2, x, y)
             self.mapping = [d1, d2]
+            self.classes = [self.classes[d1], self.classes[d2]]
         return x, y
 
     def pca(self, x, n_components=16):
@@ -162,7 +163,7 @@ class DataPreprocessor():
         self.dims = x.shape[1:]
         return x
 
-    def process(self, x, y, config):
+    def process(self, x, y, config, classes):
         """
         Data processing pipeline.
         """
@@ -170,6 +171,7 @@ class DataPreprocessor():
         self.dims = config['input_dims']
         self.output_dims = config['output_dims']
         self.mapping = config['mapping']
+        self.classes = classes
 
         # Add new axis
         x = x[..., np.newaxis]  # For resizing we need to add one more axis
