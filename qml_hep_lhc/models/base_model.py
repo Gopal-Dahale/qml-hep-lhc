@@ -11,8 +11,8 @@ class BaseModel(Model):
         self.args = vars(args) if args is not None else {}
 
         # Loss function
-        loss = self.args.get('loss', "CategoricalCrossentropy")
-        self.loss_fn = getattr(losses, loss)
+        self.loss = self.args.get('loss', "CategoricalCrossentropy")
+        self.loss_fn = getattr(losses, self.loss)
 
         # Optimizer
         self.optimizer = getattr(optimizers, self.args.get('optimizer', 'Adam'))
@@ -23,12 +23,13 @@ class BaseModel(Model):
         self.batch_size = self.args.get('batch_size', 128)
 
         if self.args.get('use_quantum', False):
-            print("use quantum")
-            self.loss_fn = getattr(losses, "MeanSquaredError")
-            self.accuracy = [custom_accuracy, qAUC()]
+            self.loss = "MeanSquaredError"
+            self.loss_fn = getattr(losses, self.loss)
+            self.accuracy = [qAUC(), custom_accuracy]
+            self.acc_metrics = ['custom_accuracy,', 'qAUC']
         else:
-            print("dont use quantum")
-            self.accuracy = ['accuracy', AUC()]
+            self.accuracy = [AUC(), 'accuracy']
+            self.acc_metrics = ['accuracy,', 'AUC']
 
     def compile(self):
         super(BaseModel,
