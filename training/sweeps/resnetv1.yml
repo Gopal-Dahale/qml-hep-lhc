@@ -27,7 +27,7 @@ parameters:
   resnet-depth:
     values: [20,32,44,56,110]
   epochs:
-    value: 1
+    value: 20
   validation-split:
     value: 0.2
   num-workers:
@@ -35,5 +35,5 @@ parameters:
   learning-rate:
     values: [0.01, 0.001, 0.0003]
   percent-samples:
-    value: 0.01
+    value: 1
   
