@@ -5,7 +5,7 @@ from argparse import ArgumentParser, Namespace
 from os import path, makedirs
 from qml_hep_lhc.utils import _import_class
 from tensorflow.keras.callbacks import ReduceLROnPlateau
-from tensorflow.keras.callbacks import Callback
+from tensorflow.keras.callbacks import Callback, EarlyStopping
 from tensorflow import concat
 from tensorflow import map_fn
 from cirq.contrib.svg import SVGCircuit
@@ -153,6 +153,12 @@ def _setup_callbacks(args, config, data):
 
     callbacks.append(lr_scheduler_callback)
 
+    # Early Stopping Callback
+    early_stopping_callback = EarlyStopping(monitor='val_loss',
+                                            mode="min",
+                                            patience=5)
+
+    callbacks.append(early_stopping_callback)
     return callbacks
 
 
