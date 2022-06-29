@@ -4,6 +4,14 @@ from sklearn.decomposition import PCA
 from numba import njit, prange
 from tensorflow.image import resize, central_crop
 from tensorflow.keras.utils import to_categorical
+from argparse import Action
+
+
+class ParseAction(Action):
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        values = list(map(int, values.split()))
+        setattr(namespace, self.dest, values)
 
 
 class DataPreprocessor():
@@ -45,7 +53,7 @@ class DataPreprocessor():
         x = x.reshape([-1] + list(img_size))
         return x
 
-    def normalize(self, x):
+    def normalize_data(self, x):
         """
         Scale input vectors individually to unit norm (vector length).
         """
@@ -189,7 +197,7 @@ class DataPreprocessor():
         if self._standardize:
             x = self.standardize(x)
         if self._normalize:
-            x = self.normalize(x)
+            x = self.normalize_data(x)
         if self._min_max:
             x = self.min_max_scale(x)
 
@@ -207,7 +215,7 @@ class DataPreprocessor():
                             "-to-cat",
                             action="store_true",
                             default=False)
-        parser.add_argument("--normalize"
+        parser.add_argument("--normalize",
                             "-nz",
                             action="store_true",
                             default=False)
@@ -219,15 +227,10 @@ class DataPreprocessor():
                             "-mm",
                             action="store_true",
                             default=False)
-        parser.add_argument("--resize",
-                            "-rz",
-                            nargs='+',
-                            type=int,
-                            default=None)
+        parser.add_argument("--resize", "-rz", action=ParseAction, default=None)
         parser.add_argument("--binary-data",
                             "-bd",
-                            nargs='+',
-                            type=int,
+                            action=ParseAction,
                             default=None)
         parser.add_argument("--pca", "-pca", type=int, default=None)
         parser.add_argument("--graph-conv",
