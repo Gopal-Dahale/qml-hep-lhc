@@ -78,7 +78,7 @@ def _setup_callbacks(args, config, data):
     # Wandb callback
     if args.wandb:
         wandb.init(project='qml-hep-lhc', config=config)
-        wandb.run.name = f"{args.data_class}-{args.model_class}"
+        # wandb.run.name = f"{args.data_class}-{args.model_class}"
         callbacks.append(wandb.keras.WandbCallback(save_weights_only=True))
 
         # ROC Plot callback for wandb
@@ -148,7 +148,7 @@ def _setup_callbacks(args, config, data):
     lr_scheduler_callback = ReduceLROnPlateau(monitor='val_loss',
                                               factor=0.1,
                                               patience=5,
-                                              min_delta=0.001,
+                                              min_delta=0.0001,
                                               min_lr=1e-6)
 
     callbacks.append(lr_scheduler_callback)
@@ -167,6 +167,7 @@ def get_configuration(parser, args, data, model):
     # Add additional configurations
     arg_grps['Base Model Args']['loss'] = model.loss
     arg_grps['Base Model Args']['accuracy'] = model.acc_metrics
+    arg_grps['Base Model Args']['scheduler'] = 'ReduceLROnPlateau'
 
     # Additional configurations for quantum model
     if arg_grps['Base Model Args']['use_quantum']:
