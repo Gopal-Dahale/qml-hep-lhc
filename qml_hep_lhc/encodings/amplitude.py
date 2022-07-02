@@ -19,10 +19,10 @@ class AmplitudeMap:
         den_end = index_den + 2**(s)
 
         if ((num_start >= num_end) or (den_start >= den_end)):
-            return 0
+            return 0 * x[num_start]
 
-        num = sp.sqrt(np.sum(np.abs(x[index_num:index_num + 2**(s - 1)])**2))
-        den = sp.sqrt(np.sum(np.abs(x[index_den:index_den + 2**(s)])**2))
+        num = (np.sum(np.abs(x[num_start:num_end])**2))**0.5
+        den = (np.sum(np.abs(x[den_start:den_end])**2))**0.5
 
         beta = 2 * sp.asin(num / den) * sp.pi
         return beta
@@ -33,6 +33,9 @@ class AmplitudeMap:
         return [i for i, (x, y) in enumerate(zip(curr_bin, prev_bin)) if x != y]
 
     def build(self, qubits, symbols):
+        num_in_symbols = len(symbols)
+        symbols = np.asarray(symbols).reshape((num_in_symbols))
+
         n = len(qubits)
         ae_ops = []
         count = 0

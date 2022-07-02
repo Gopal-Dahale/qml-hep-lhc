@@ -1,6 +1,7 @@
 import cirq
 from qml_hep_lhc.utils import _import_class
 import sympy as sp
+import numpy as np
 
 
 class AngleMap:
@@ -12,6 +13,8 @@ class AngleMap:
         self.gate = _import_class("cirq.{}".format(gate))
 
     def build(self, qubits, symbols):
+        num_in_symbols = len(symbols)
+        symbols = np.asarray(symbols).reshape((num_in_symbols))
         e_ops = [
             self.gate(sp.pi * symbols[index])(bit)
             for index, bit in enumerate(qubits)
