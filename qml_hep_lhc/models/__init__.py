@@ -4,3 +4,4 @@ from .classical.resnet.v2 import ResnetV2
 from .quantum.qcnn_cong import QCNNCong
 from .base_model import BaseModel
 from .quantum.qcnn_chen import QCNNChen
+from .classical.cnn import CNN
