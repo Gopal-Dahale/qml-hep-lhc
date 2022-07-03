@@ -22,7 +22,13 @@ class ElectronPhoton(BaseDataModule):
         # Parse args
         self.args['is_binary_data'] = True
         self.percent_samples = self.args.get("percent_samples", 1.0)
-        self.filename = self.data_dir / 'electron_photon.npz'
+        dataset_type = self.args.get("dataset_type", "small")
+
+        if dataset_type == "small":
+            self.filename = self.data_dir / "electron_photon.npz"
+        elif dataset_type == "large":
+            self.dims = (32, 32, 2)
+            self.filename = self.data_dir / "electron_photon_large.npz"
 
     def prepare_data(self):
         # Load the data
@@ -64,3 +70,11 @@ class ElectronPhoton(BaseDataModule):
 
     def __repr__(self) -> str:
         return super().__repr__("Electron Photon")
+
+    @staticmethod
+    def add_to_argparse(parser):
+        parser.add_argument("--dataset-type",
+                            type=str,
+                            default='small',
+                            choices=['small', 'large'])
+        return parser

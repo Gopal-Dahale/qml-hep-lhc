@@ -16,6 +16,9 @@ class BaseDataModule():
 
         # Set the data directories
         self.data_dir = self.data_dirname() / "downloaded"
+        if self.args.get("data_dir") is not None:
+            self.data_dir = Path(self.args.get("data_dir"))
+
         self.processed_data_dir = self.data_dirname() / "processed"
 
         # Create data directories if does not exist
@@ -50,7 +53,7 @@ class BaseDataModule():
         Returns:
           The path to the datasets folder.
         """
-        return Path(__file__).resolve().parents[3] / "datasets"
+        return Path(__file__).resolve().parents[2] / "datasets"
 
     @staticmethod
     def add_to_argparse(parser):
@@ -59,6 +62,7 @@ class BaseDataModule():
                             "-per-samp",
                             type=float,
                             default=1.0)
+        parser.add_argument("--data-dir", "-data-dir", type=str, default=None)
         return parser
 
     def config(self):

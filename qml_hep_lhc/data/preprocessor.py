@@ -5,13 +5,7 @@ from numba import njit, prange
 from tensorflow.image import resize, central_crop
 from tensorflow.keras.utils import to_categorical
 from argparse import Action
-
-
-class ParseAction(Action):
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        values = list(map(int, values.split()))
-        setattr(namespace, self.dest, values)
+from qml_hep_lhc.utils import ParseAction
 
 
 class DataPreprocessor():
