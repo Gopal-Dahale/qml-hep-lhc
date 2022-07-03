@@ -93,18 +93,15 @@ def _setup_callbacks(args, config, data):
             def on_train_end(self, logs=None):
                 out = self.model.predict(self.x)
                 if self.use_quantum:
-                    preds = map_fn(lambda x: 1.0 if x >= 0 else -1.0, out)
-                    preds = (preds + 1) / 2
-                    probs = (out + 1) / 2
+                    preds = map_fn(lambda x: 1.0 if x >= 0.5 else 0, out)
+                    probs = out
                     probs = concat((probs, 1 - probs), axis=1)
                 else:
                     self.y = self.y.argmax(axis=1)
                     preds = out.argmax(axis=1)
                     probs = out
 
-                roc_curve = wandb.plot.roc_curve(self.y,
-                                                 probs,
-                                                 labels=self.classes)
+                roc_curve = wandb.sklearn.plot_roc(self.y, probs, self.classes)
                 confusion_matrix = wandb.sklearn.plot_confusion_matrix(
                     self.y, preds, self.classes)
 
