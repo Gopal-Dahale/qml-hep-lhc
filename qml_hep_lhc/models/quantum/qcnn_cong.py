@@ -134,7 +134,7 @@ class QCNNCong(BaseModel):
 		"""
 
     def __init__(self, data_config, args=None):
-        super().__init__(args)
+        super(QCNNCong,).__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Data config

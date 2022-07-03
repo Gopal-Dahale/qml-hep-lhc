@@ -1,20 +1,13 @@
 from qml_hep_lhc.models.base_model import BaseModel
-from tensorflow.keras.layers import Conv2D, Activation, Layer, Dense, MaxPool2D, Dropout, Flatten, Input
-from argparse import Action
+from tensorflow.keras.layers import Conv2D, Dense, MaxPool2D, Dropout, Flatten, Input
 from tensorflow.keras import Model
-
-
-class ParseAction(Action):
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        values = list(map(int, values.split()))
-        setattr(namespace, self.dest, values)
+from qml_hep_lhc.utils import ParseAction
 
 
 class CNN(BaseModel):
 
     def __init__(self, data_config, args=None):
-        super().__init__()
+        super(CNN, self).__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Moel Configuration
@@ -80,3 +73,4 @@ class CNN(BaseModel):
         parser.add_argument('--conv-dims', action=ParseAction, default=[64])
         parser.add_argument('--num-fc-layers', type=int, default=1)
         parser.add_argument('--fc-dims', action=ParseAction, default=[128])
+        return parser

@@ -11,7 +11,7 @@ class ResnetV2(BaseModel):
     """
 
     def __init__(self, data_config, args=None):
-        super().__init__()
+        super(ResnetV2, self).__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Model configuration

@@ -158,7 +158,7 @@ class QCNNChen(BaseModel):
     """
 
     def __init__(self, data_config, args=None):
-        super().__init__(args)
+        super(QCNNChen, self).__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Data config

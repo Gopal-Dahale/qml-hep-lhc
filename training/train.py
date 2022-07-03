@@ -33,12 +33,16 @@ def _setup_parser():
 
     temp_args, _ = parser.parse_known_args()
 
+    base_data_class = _import_class(f"qml_hep_lhc.data.BaseDataModule")
     data_class = _import_class(f"qml_hep_lhc.data.{temp_args.data_class}")
     base_model_class = _import_class(f"qml_hep_lhc.models.BaseModel")
     model_class = _import_class(f"qml_hep_lhc.models.{temp_args.model_class}")
     dp_class = _import_class(f"qml_hep_lhc.data.DataPreprocessor")
 
     # Get data, model, and LitModel specific arguments
+    base_data_group = parser.add_argument_group("Base Data Args")
+    base_data_class.add_to_argparse(base_data_group)
+
     data_group = parser.add_argument_group("Data Args")
     data_class.add_to_argparse(data_group)
 
