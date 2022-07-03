@@ -22,14 +22,13 @@ class BaseModel(Model):
         # Learning rate scheduler
         self.batch_size = self.args.get('batch_size', 128)
 
+        # Accuracy
+        self.accuracy = [AUC(), 'accuracy']
+        self.acc_metrics = ['accuracy,', 'AUC']
+
         if self.args.get('use_quantum', False):
-            self.loss = "MeanSquaredError"
+            self.loss = "BinaryCrossentropy"
             self.loss_fn = getattr(losses, self.loss)
-            self.accuracy = [qAUC(), custom_accuracy]
-            self.acc_metrics = ['custom_accuracy,', 'qAUC']
-        else:
-            self.accuracy = [AUC(), 'accuracy']
-            self.acc_metrics = ['accuracy,', 'AUC']
 
     def compile(self):
         super(BaseModel,
