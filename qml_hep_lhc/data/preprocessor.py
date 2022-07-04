@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, normalize, MinMaxScaler
 from sklearn.decomposition import PCA
 from numba import njit, prange
-from tensorflow.image import resize, central_crop
+from tensorflow import image
 from tensorflow.keras.utils import to_categorical
 from argparse import Action
 from qml_hep_lhc.utils import ParseAction
@@ -71,7 +71,7 @@ class DataPreprocessor():
         It resizes the training and testing data to the size specified in the constructor
         """
         print("Resizing data...")
-        x = resize(x, self._resize).numpy()
+        x = image.resize(x, self._resize).numpy()
         self.dims = x.shape[1:]
         return x
 
@@ -161,7 +161,7 @@ class DataPreprocessor():
 
     def center_crop(self, x, fraction=0.2):
         print("Center cropping...")
-        x = central_crop(x, fraction).numpy()
+        x = image.central_crop(x, fraction).numpy()
         self.dims = x.shape[1:]
         return x
 

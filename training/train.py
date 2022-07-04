@@ -1,7 +1,7 @@
 from tensorflow.keras.callbacks import ModelCheckpoint
-from tensorflow.train import latest_checkpoint
+from tensorflow import train
 import wandb
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from os import path, makedirs
 from qml_hep_lhc.utils import _import_class
 from tensorflow.keras.callbacks import ReduceLROnPlateau
@@ -214,7 +214,7 @@ def main():
     model = model_class(data.config(), args)  # Model
 
     if args.load_latest_checkpoint:
-        latest = latest_checkpoint(path.dirname('./checkpoints/'))
+        latest = train.latest_checkpoint(path.dirname('./checkpoints/'))
         print(latest)
         model.load_weights(latest)
 
