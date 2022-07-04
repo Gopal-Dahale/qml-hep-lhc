@@ -95,9 +95,9 @@ class QCNN(Layer):
 
         # Define computation layer
         self.empty_circuit = tfq.convert_to_tensor([cirq.Circuit()])
-        self.circuit = data_circuit + model_circuit
+        self.ansatz = model_circuit
         self.computation_layer = tfq.layers.ControlledPQC(
-            self.circuit, self.observables)
+            data_circuit + model_circuit, self.observables)
 
     def call(self, input_tensor):
 
@@ -134,7 +134,7 @@ class QCNNCong(BaseModel):
 		"""
 
     def __init__(self, data_config, args=None):
-        super(QCNNCong,).__init__(args)
+        super(QCNNCong, self).__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Data config
@@ -164,6 +164,9 @@ class QCNNCong(BaseModel):
     def build_graph(self):
         x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="QCNNCong")
+
+    def get_ansatz(self):
+        return [self.qcnn.ansatz]
 
     @staticmethod
     def add_to_argparse(parser):

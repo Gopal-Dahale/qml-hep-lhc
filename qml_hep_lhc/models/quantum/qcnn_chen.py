@@ -102,9 +102,9 @@ class QuantumConv(Layer):
 
         # Define computation layer
         self.empty_circuit = tfq.convert_to_tensor([cirq.Circuit()])
-        self.circuit = data_circuit + model_circuit
+        self.ansatz = model_circuit
         self.computation_layer = tfq.layers.ControlledPQC(
-            self.circuit, self.observables)
+            data_circuit + model_circuit, self.observables)
 
     def call(self, input_tensor):
         batch_dim = shape(input_tensor)[0]
@@ -191,6 +191,9 @@ class QCNNChen(BaseModel):
     def build_graph(self):
         x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="QCNNChen")
+
+    def get_ansatz(self):
+        return [self.conv2d_1.ansatz, self.conv2d_2]
 
     @staticmethod
     def add_to_argparse(parser):

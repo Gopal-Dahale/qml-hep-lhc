@@ -73,6 +73,7 @@ class QLinear(Layer):
 
         # Finally, prepare the readout qubit.
         model_circuit.append(cirq.H(self.readout))
+        self.ansatz = model_circuit
 
         # Convert symbols to list
         self.var_symbols = list(self.var_symbols.flat)
@@ -98,9 +99,9 @@ class QLinear(Layer):
 
         # Define computation layer
         self.empty_circuit = tfq.convert_to_tensor([cirq.Circuit()])
-        self.circuit = data_circuit + model_circuit
+
         self.computation_layer = tfq.layers.ControlledPQC(
-            self.circuit, self.observables)
+            data_circuit + model_circuit, self.observables)
 
     def call(self, input_tensor):
 
@@ -173,8 +174,8 @@ class QNN(BaseModel):
         x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="QNN")
 
-    def get_circuit(self):
-        return self.qlinear.circuit
+    def get_ansatz(self):
+        return [self.qlinear.ansatz]
 
     @staticmethod
     def add_to_argparse(parser):
