@@ -19,6 +19,9 @@ class BaseDataModule():
         if self.args.get("data_dir") is not None:
             self.data_dir = Path(self.args.get("data_dir"))
 
+        print(self.args.get("data_dir"))
+        print(self.data_dir)
+
         self.processed_data_dir = self.data_dirname() / "processed"
 
         # Create data directories if does not exist
