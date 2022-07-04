@@ -2,7 +2,7 @@ from qml_hep_lhc.data.base_data_module import BaseDataModule, _download_raw_data
 import numpy as np
 from qml_hep_lhc.data.preprocessor import DataPreprocessor
 from sklearn.utils import shuffle
-from qml_hep_lhc.data.constants import ELECTRON_PHOTON_DATASET_URL
+from qml_hep_lhc.data.constants import ELECTRON_PHOTON_SMALL_DATASET_URL
 
 
 class ElectronPhoton(BaseDataModule):
@@ -22,18 +22,19 @@ class ElectronPhoton(BaseDataModule):
         # Parse args
         self.args['is_binary_data'] = True
         self.percent_samples = self.args.get("percent_samples", 1.0)
-        dataset_type = self.args.get("dataset_type", "small")
+        self.dataset_type = self.args.get("dataset_type", "small")
+        self.filename = self.data_dir / ("electron_photon_" +
+                                         self.dataset_type + ".npz")
 
-        if dataset_type == "small":
-            self.filename = self.data_dir / "electron_photon.npz"
-        elif dataset_type == "large":
+        if self.dataset_type != "small":
             self.dims = (32, 32, 2)
-            self.filename = self.data_dir / "electron_photon_large.npz"
 
     def prepare_data(self):
         # Load the data
         if not self.filename.exists():
-            _download_raw_dataset(ELECTRON_PHOTON_DATASET_URL, self.filename)
+            # Downloads the small data
+            _download_raw_dataset(ELECTRON_PHOTON_SMALL_DATASET_URL,
+                                  self.filename)
 
         # Extract the data
         data = np.load(self.filename, allow_pickle=True)
@@ -69,12 +70,12 @@ class ElectronPhoton(BaseDataModule):
         self.classes = preprocessor.classes
 
     def __repr__(self) -> str:
-        return super().__repr__("Electron Photon")
+        return super().__repr__("Electron Photon " + self.dataset_type)
 
     @staticmethod
     def add_to_argparse(parser):
         parser.add_argument("--dataset-type",
                             type=str,
                             default='small',
-                            choices=['small', 'large'])
+                            choices=['small', 'med', 'large'])
         return parser
