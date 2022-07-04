@@ -1,32 +1,32 @@
-from tensorflow.keras.datasets import mnist
 from qml_hep_lhc.data.base_data_module import BaseDataModule
+import numpy as np
 from qml_hep_lhc.data.preprocessor import DataPreprocessor
 from sklearn.utils import shuffle
 
 
-class MNIST(BaseDataModule):
-    """
-    MNIST Data module
-    """
+class QuarkGluon(BaseDataModule):
 
     def __init__(self, args):
         super().__init__(args)
 
-        self.classes = list(range(10))
-
-        self.dims = (28, 28, 1)
+        self.dims = (39, 39, 3)
         self.output_dims = (1,)
-        self.mapping = list(range(10))
+        self.mapping = list(range(2))
+
+        self.classes = ['Quark', 'Gluon']
 
         # Parse args
-        self.args['is_binary_data'] = False
-        self.filename = self.data_dir / 'mnist.npz'
+        self.args['is_binary_data'] = True
+        self.percent_samples = self.args.get("percent_samples", 1.0)
+        self.filename = self.data_dir / 'quark_gluon_med.npz'
 
     def prepare_data(self):
         # Load the data
-        (self.x_train,
-         self.y_train), (self.x_test,
-                         self.y_test) = mnist.load_data(self.filename)
+
+        # Extract the data
+        data = np.load(self.filename, allow_pickle=True)
+        self.x_train, self.y_train = data['x_train'], data['y_train']
+        self.x_test, self.y_test = data['x_test'], data['y_test']
 
         # Shuffle the data
         self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
@@ -37,7 +37,6 @@ class MNIST(BaseDataModule):
                                          len(self.x_train))]
         self.y_train = self.y_train[:int(self.percent_samples *
                                          len(self.y_train))]
-
         self.x_test = self.x_test[:int(self.percent_samples * len(self.x_test))]
         self.y_test = self.y_test[:int(self.percent_samples * len(self.y_test))]
 
@@ -50,6 +49,7 @@ class MNIST(BaseDataModule):
                                                         self.y_test,
                                                         self.config(),
                                                         self.classes)
+
         # Set the configuration
         self.dims = preprocessor.dims
         self.output_dims = preprocessor.output_dims
@@ -57,7 +57,7 @@ class MNIST(BaseDataModule):
         self.classes = preprocessor.classes
 
     def __repr__(self) -> str:
-        return super().__repr__("MNIST")
+        return super().__repr__("Quark Gluon")
 
     @staticmethod
     def add_to_argparse(parser):

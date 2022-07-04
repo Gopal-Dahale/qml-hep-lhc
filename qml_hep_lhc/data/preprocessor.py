@@ -155,8 +155,8 @@ class DataPreprocessor():
         iterate(adj)
 
         # Perfrom graph convolution
-        x = x.reshape(-1, N).T
-        x = np.dot(adj, x).T.reshape(-1, m, n, 1)
+        x = x.reshape(-1, N, self.dims[2]).T
+        x = np.dot(adj, x).T.reshape(-1, m, n, self.dims[2])
         return x
 
     def center_crop(self, x, fraction=0.2):
@@ -176,7 +176,8 @@ class DataPreprocessor():
         self.classes = classes
 
         # Add new axis
-        x = x[..., np.newaxis]  # For resizing we need to add one more axis
+        if len(x.shape) == 3:
+            x = x[..., np.newaxis]  # For resizing we need to add one more axis
 
         if self._binary_data and len(self._binary_data) == 2:
             x, y = self.binary_data(x, y)
