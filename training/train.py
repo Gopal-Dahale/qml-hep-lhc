@@ -9,7 +9,9 @@ from tensorflow.keras.callbacks import Callback, EarlyStopping
 from tensorflow import concat
 from tensorflow import map_fn
 from cirq.contrib.svg import SVGCircuit
-from cairosvg import svg2png
+import io
+from svglib.svglib import svg2rlg
+from reportlab.graphics import renderPM
 
 
 def _setup_parser():
@@ -112,19 +114,28 @@ def _setup_callbacks(args, config, data):
                 wandb.log({"roc_curve": roc_curve})
                 wandb.log({"confusion_matrix": confusion_matrix})
 
-                method = 'get_circuit'
-                model_has_circuit = hasattr(self.model, method) and callable(
+                method = 'get_ansatz'
+                model_has_ansatz = hasattr(self.model, method) and callable(
                     getattr(self.model, method))
 
-                if model_has_circuit:
-                    circuit = self.model.get_circuit()
-                    image = SVGCircuit(circuit)._repr_svg_()
-                    svg2png(image, write_to='circuit.png')
+                if model_has_ansatz:
+                    ansatzes = self.model.get_ansatz()
 
-                    circuit_log = wandb.Image('circuit.png',
-                                              caption=f"Quantum Circuit")
+                    circuit_logs = []
+                    for i, ansatz in enumerate(ansatzes):
+                        drawing = svg2rlg(
+                            io.StringIO(SVGCircuit(ansatz)._repr_svg_()))
+                        filename = f'circuit-{i}.png'
+                        renderPM.drawToFile(drawing,
+                                            f"temp_circuits/{filename}",
+                                            fmt="PNG")
 
-                    wandb.log({"circuit": circuit_log})
+                    circuit_logs = [
+                        wandb.Image(f"temp_circuits/circuit-{i}.png")
+                        for i in range(len(ansatzes))
+                    ]
+
+                    wandb.log({"circuits": circuit_logs})
 
         callbacks.append(PRMetrics(data, args.use_quantum))
 
