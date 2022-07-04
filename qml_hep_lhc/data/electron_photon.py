@@ -25,16 +25,20 @@ class ElectronPhoton(BaseDataModule):
         self.dataset_type = self.args.get("dataset_type", "small")
         self.filename = self.data_dir / ("electron_photon_" +
                                          self.dataset_type + ".npz")
-
+        print(self.filename)
         if self.dataset_type != "small":
             self.dims = (32, 32, 2)
 
     def prepare_data(self):
         # Load the data
         if not self.filename.exists():
-            # Downloads the small data
-            _download_raw_dataset(ELECTRON_PHOTON_SMALL_DATASET_URL,
-                                  self.filename)
+            if self.dataset_type == "small":
+                # Downloads the small data
+                _download_raw_dataset(ELECTRON_PHOTON_SMALL_DATASET_URL,
+                                      self.filename)
+            else:
+                raise ValueError(
+                    "Specify the dataset dir for medium/large dataset")
 
         # Extract the data
         data = np.load(self.filename, allow_pickle=True)
