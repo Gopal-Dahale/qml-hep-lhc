@@ -5,7 +5,7 @@ import numpy as np
 
 class DoubleAngleMap:
 
-    def __init__(self, activation='tanh'):
+    def __init__(self, activation='atan'):
         super().__init__()
         self.activation = getattr(sp, activation)
 

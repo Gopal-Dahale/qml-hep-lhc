@@ -1,21 +1,20 @@
 from tensorflow.keras import Input, Model
-from tensorflow.keras.layers import Layer, Flatten, Dense, Concatenate, Reshape
+from tensorflow.keras.layers import Layer, Flatten, Dense, Concatenate, Reshape, Activation
 import sympy
 import cirq
 import numpy as np
 from qml_hep_lhc.models.quantum.utils import one_qubit_unitary
 from qml_hep_lhc.models.base_model import BaseModel
-from tensorflow import random_uniform_initializer, Variable, constant, repeat, tile, shape, concat, gather
+from tensorflow import random_uniform_initializer, Variable, constant, repeat, tile, shape, concat, gather, pad
 import tensorflow_quantum as tfq
 from qml_hep_lhc.models.quantum.utils import symbols_in_expr_map, resolve_formulas, get_count_of_qubits, get_num_in_symbols
 from qml_hep_lhc.utils import _import_class
-from tensorflow import pad, constant
 
 
 def entangling_circuit(qubits):
     """
-    Returns a layer of CZ entangling gates on `qubits` (arranged in a circular topology).
-    """
+	Returns a layer of CZ entangling gates on `qubits` (arranged in a circular topology).
+	"""
     cz_ops = [cirq.CZ(q0, q1) for q0, q1 in zip(qubits, qubits[1:])]
     cz_ops += ([cirq.CZ(qubits[0], qubits[-1])] if len(qubits) != 2 else [])
     return cz_ops
@@ -29,6 +28,7 @@ class QuantumConv(Layer):
                  kernel_size=3,
                  strides=1,
                  activation='tanh',
+                 drc=False,
                  n_layers=1):
 
         super(QuantumConv, self).__init__(name=name)
@@ -38,6 +38,7 @@ class QuantumConv(Layer):
         self.activation = activation
         self.n_layers = n_layers
         self.fm_class = fm_class
+        self.drc = drc
 
         # Prepare qubits
         self.n_qubits = get_count_of_qubits(self.fm_class,
@@ -57,8 +58,15 @@ class QuantumConv(Layer):
         # Sympy symbols for encoding angles
         self.num_in_symbols = get_num_in_symbols(self.fm_class,
                                                  kernel_size * kernel_size)
-        in_symbols = sympy.symbols(f'x0:{self.num_in_symbols}')
-        self.in_symbols = np.asarray(in_symbols).reshape((self.num_in_symbols))
+        if self.drc:
+            in_symbols = sympy.symbols(
+                f'x0:{self.num_in_symbols* self.n_layers}')
+            self.in_symbols = np.asarray(in_symbols).reshape(
+                (self.n_layers, self.num_in_symbols))
+        else:
+            in_symbols = sympy.symbols(f'x0:{self.num_in_symbols* 1}')
+            self.in_symbols = np.asarray(in_symbols).reshape(
+                (1, self.num_in_symbols))
 
     def build(self, input_shape):
         # Define data and model circuits
@@ -67,14 +75,19 @@ class QuantumConv(Layer):
 
         # Prepare data circuit
         self.fm = _import_class(f"qml_hep_lhc.encodings.{self.fm_class}")()
-        data_circuit += self.fm.build(self.qubits, self.in_symbols)
+        data_circuit += self.fm.build(self.qubits, self.in_symbols[0])
 
         # Prepare model circuit
-        for layer in range(self.n_layers):
+        for l in range(self.n_layers):
             model_circuit += entangling_circuit(self.qubits)
-            for bit in range(self.n_qubits):
-                model_circuit += one_qubit_unitary(self.qubits[bit],
-                                                   self.var_symbols[layer, bit])
+            model_circuit += cirq.Circuit([
+                one_qubit_unitary(q, self.var_symbols[l, i])
+                for i, q in enumerate(self.qubits)
+            ])
+            # ReEncoding layer
+            if self.drc and l < self.n_layers - 1:
+                model_circuit += self.fm.build(self.qubits,
+                                               self.in_symbols[l + 1])
 
         # Convert symbols to list
         self.var_symbols = list(self.var_symbols.flat)
@@ -93,10 +106,11 @@ class QuantumConv(Layer):
         self.raw_symbols = symbols_in_expr_map(expr_map)
         self.expr = list(expr_map)
 
-        print(data_circuit)
+        model_circuit, expr_map = cirq.flatten(model_circuit)
+        self.model_expr = list(expr_map)
 
         # Define explicit symbol order and expression resolver
-        symbols = [str(symb) for symb in self.var_symbols + self.expr]
+        symbols = [str(symb) for symb in self.model_expr + self.expr]
         self.indices = constant([symbols.index(a) for a in sorted(symbols)])
         self.input_resolver = resolve_formulas(self.expr, self.raw_symbols)
 
@@ -138,7 +152,14 @@ class QuantumConv(Layer):
                 tiled_up_thetas = tile(self.theta,
                                        multiples=[batch_dim, 1],
                                        name=self.name + "_tiled_up_thetas")
-                joined_vars = concat([tiled_up_thetas, resolved_inputs], axis=1)
+
+                if self.drc:
+                    tiled_up_inputs = tile(resolved_inputs,
+                                           multiples=[1, self.n_layers])
+                else:
+                    tiled_up_inputs = resolved_inputs
+
+                joined_vars = concat([tiled_up_thetas, tiled_up_inputs], axis=1)
                 joined_vars = gather(joined_vars,
                                      self.indices,
                                      axis=1,
@@ -153,9 +174,9 @@ class QuantumConv(Layer):
 
 class QCNNChen(BaseModel):
     """
-    Quantum Convolutional Neural Network.
-    This implementation is based on https://arxiv.org/abs/2012.12177
-    """
+	Quantum Convolutional Neural Network.
+	This implementation is based on https://arxiv.org/abs/2012.12177
+	"""
 
     def __init__(self, data_config, args=None):
         super(QCNNChen, self).__init__(args)
@@ -166,15 +187,18 @@ class QCNNChen(BaseModel):
         self.fm_class = self.args.get("feature_map")
         if self.fm_class is None:
             self.fm_class = "DoubleAngleMap"
+        self.drc = self.args.get("drc")
 
         self.conv2d_1 = QuantumConv(kernel_size=3,
                                     strides=1,
                                     n_layers=2,
                                     fm_class=self.fm_class,
+                                    drc=self.drc,
                                     name='conv2d_1')
         self.conv2d_2 = QuantumConv(kernel_size=2,
                                     strides=1,
                                     n_layers=2,
+                                    drc=self.drc,
                                     fm_class=self.fm_class,
                                     name='conv2d_2')
         self.dense1 = Dense(8, activation='relu')
@@ -197,4 +221,5 @@ class QCNNChen(BaseModel):
 
     @staticmethod
     def add_to_argparse(parser):
+        parser.add_argument("--drc", action="store_true", default=False)
         return parser
