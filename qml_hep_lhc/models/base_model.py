@@ -12,7 +12,7 @@ class BaseModel(Model):
 
         # Loss function
         self.loss = self.args.get('loss', "CategoricalCrossentropy")
-        self.loss_fn = getattr(losses, self.loss)
+        self.loss_fn = getattr(losses, self.loss)()
 
         # Optimizer
         self.optimizer = getattr(optimizers, self.args.get('optimizer', 'Adam'))
@@ -28,11 +28,11 @@ class BaseModel(Model):
 
         if self.args.get('use_quantum', False):
             self.loss = "BinaryCrossentropy"
-            self.loss_fn = getattr(losses, self.loss)
+            self.loss_fn = getattr(losses, self.loss)(from_logits=True)
 
     def compile(self):
         super(BaseModel,
-              self).compile(loss=self.loss_fn(),
+              self).compile(loss=self.loss_fn,
                             metrics=self.accuracy,
                             optimizer=self.optimizer(learning_rate=self.lr),
                             run_eagerly=True)
