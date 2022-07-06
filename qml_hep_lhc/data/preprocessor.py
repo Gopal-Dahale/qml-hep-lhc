@@ -184,10 +184,10 @@ class DataPreprocessor():
 
         if self._resize is not None and len(self._resize) == 2:
             x = self.resize(x)
-        if self._pca is not None:
-            x = self.pca(x, self._pca)
         if self._center_crop:
             x = self.center_crop(x, self._center_crop)
+        if self._pca is not None:
+            x = self.pca(x, self._pca)
 
         if self._standardize:
             x = self.standardize(x)
