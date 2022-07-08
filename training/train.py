@@ -10,8 +10,6 @@ from tensorflow import concat
 from tensorflow import map_fn
 from cirq.contrib.svg import SVGCircuit
 import io
-from svglib.svglib import svg2rlg
-from reportlab.graphics import renderPM
 
 
 def _setup_parser():
@@ -114,29 +112,6 @@ def _setup_callbacks(args, config, data):
                 wandb.log({"roc_curve": roc_curve})
                 wandb.log({"confusion_matrix": confusion_matrix})
 
-                method = 'get_ansatz'
-                model_has_ansatz = hasattr(self.model, method) and callable(
-                    getattr(self.model, method))
-
-                if model_has_ansatz:
-                    ansatzes = self.model.get_ansatz()
-
-                    circuit_logs = []
-                    for i, ansatz in enumerate(ansatzes):
-                        drawing = svg2rlg(
-                            io.StringIO(SVGCircuit(ansatz)._repr_svg_()))
-                        filename = f'circuit-{i}.png'
-                        renderPM.drawToFile(drawing,
-                                            f"temp_circuits/{filename}",
-                                            fmt="PNG")
-
-                    circuit_logs = [
-                        wandb.Image(f"temp_circuits/circuit-{i}.png")
-                        for i in range(len(ansatzes))
-                    ]
-
-                    wandb.log({"circuits": circuit_logs})
-
         callbacks.append(PRMetrics(data, args.use_quantum))
 
     checkpoint_path = './checkpoints/'
@@ -168,7 +143,7 @@ def _setup_callbacks(args, config, data):
     # Early Stopping Callback
     early_stopping_callback = EarlyStopping(monitor='val_loss',
                                             mode="min",
-                                            patience=5)
+                                            patience=20)
 
     callbacks.append(early_stopping_callback)
     return callbacks
@@ -224,7 +199,8 @@ def main():
     config = get_configuration(parser, args, data, model)
     callbacks = _setup_callbacks(args, config, data)
 
-    print(model.build_graph().summary())  # Print the Model summary
+    print(model.build_graph().summary(
+        expand_nested=True))  # Print the Model summary
 
     # Training the model
     model.compile()
