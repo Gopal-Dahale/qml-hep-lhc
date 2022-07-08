@@ -9,7 +9,7 @@ class QuarkGluon(BaseDataModule):
     def __init__(self, args):
         super().__init__(args)
 
-        self.dims = (39, 39, 3)
+        self.dims = (39, 39, 1)
         self.output_dims = (1,)
         self.mapping = list(range(2))
 

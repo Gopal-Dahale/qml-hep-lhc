@@ -25,9 +25,6 @@ class ElectronPhoton(BaseDataModule):
         self.dataset_type = self.args.get("dataset_type", "small")
         self.filename = self.data_dir / ("electron_photon_" +
                                          self.dataset_type + ".npz")
-        print(self.filename)
-        if self.dataset_type != "small":
-            self.dims = (32, 32, 2)
 
     def prepare_data(self):
         # Load the data

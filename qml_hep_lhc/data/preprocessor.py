@@ -155,8 +155,13 @@ class DataPreprocessor():
         iterate(adj)
 
         # Perfrom graph convolution
-        x = x.reshape(-1, N, self.dims[2]).T
-        x = np.dot(adj, x).T.reshape(-1, m, n, self.dims[2])
+
+        x = [
+            np.dot(adj, x[:, :, :, i].reshape(-1, N,
+                                              1).T).T.reshape(-1, m, n, 1)
+            for i in range(self.dims[2])
+        ]
+        x = np.concatenate(x, axis=3)
         return x
 
     def center_crop(self, x, fraction=0.2):
