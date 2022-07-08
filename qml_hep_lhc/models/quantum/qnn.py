@@ -174,9 +174,6 @@ class QNN(BaseModel):
         x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="QNN")
 
-    def get_ansatz(self):
-        return [self.qlinear.ansatz]
-
     @staticmethod
     def add_to_argparse(parser):
         parser.add_argument("--num-controlled-layers", type=int, default=2)

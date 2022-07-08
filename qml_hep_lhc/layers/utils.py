@@ -1,12 +1,13 @@
-import cirq
-from sympy.functions.elementary.trigonometric import TrigonometricFunction, InverseTrigonometricFunction, HyperbolicFunction
-import sympy
-from tensorflow import sin, cos, tan, asin, acos, atan, sinh, cosh, tanh
-import tensorflow as tf
-from sympy.core import numbers as sympy_numbers
+import numpy as np
+from tensorflow import constant
 import numbers
 import re
-import numpy as np
+from sympy.core import numbers as sympy_numbers
+from tensorflow import sin, cos, tan, asin, acos, atan, sinh, cosh, tanh
+from sympy.functions.elementary.trigonometric import TrigonometricFunction, InverseTrigonometricFunction, HyperbolicFunction
+import sympy as sp
+import cirq
+import tensorflow as tf
 
 
 def get_count_of_qubits(feature_map, input_dim):
@@ -23,28 +24,86 @@ def get_num_in_symbols(feature_map, input_dim):
     return np.prod(input_dim)
 
 
-def one_qubit_unitary(bit, symbols):
-    """Make a Cirq circuit enacting a rotation of the bloch sphere about the X,
-    Y and Z axis, that depends on the values in `symbols`.
-    """
-    return cirq.Circuit(
-        cirq.X(bit)**symbols[0],
-        cirq.Y(bit)**symbols[1],
-        cirq.Z(bit)**symbols[2])
+def normalize_tuple(value, name):
+    error_msg = (f'The `{name}` argument must be a tuple of 2'
+                 f'integers. Received: {value}')
+
+    if isinstance(value, int):
+        value_tuple = (value,) * 2
+    else:
+        try:
+            value_tuple = tuple(value)
+        except TypeError:
+            raise ValueError(error_msg)
+        if len(value_tuple) != 2:
+            raise ValueError(error_msg)
+        for single_value in value_tuple:
+            try:
+                int(single_value)
+            except (ValueError, TypeError):
+                error_msg += (f'including element {single_value} of '
+                              f'type {type(single_value)}')
+                raise ValueError(error_msg)
+
+    unqualified_values = {v for v in value_tuple if v <= 0}
+    req_msg = '> 0'
+
+    if unqualified_values:
+        error_msg += (f' including {unqualified_values}'
+                      f' that does not satisfy the requirement `{req_msg}`.')
+        raise ValueError(error_msg)
+
+    return value_tuple
+
+
+def normalize_padding(value):
+    if isinstance(value, (list, tuple)):
+        return value
+    padding = value.lower()
+    if padding not in {'valid', 'same'}:
+        raise ValueError(
+            'The `padding` argument must be a list/tuple or one of '
+            '"valid", "same" '
+            f'Received: {padding}')
+    return padding
+
+
+def convolution_iters(input_shape, kernel_size, strides, padding):
+    # Calculate iterations
+
+    input_shape = np.array(input_shape)
+    kernel_size = np.array(kernel_size)
+    strides = np.array(strides)
+
+    iters = (input_shape - kernel_size) / strides + 1
+
+    if padding == 'valid':
+        return (int(iters[0]), int(iters[1])), constant([[0, 0], [0, 0], [0, 0],
+                                                         [0, 0]])
+    elif padding == 'same':
+        iters = np.ceil(iters)
+        pad_size = (iters - 1) * strides + kernel_size - input_shape
+        pad_top = int(pad_size[1] / 2)
+        pad_bottom = int(pad_size[1] - pad_top)
+        pad_left = int(pad_size[0] / 2)
+        pad_right = int(pad_size[0] - pad_left)
+        padding_constant = constant([[0, 0], [pad_left, pad_right],
+                                     [pad_top, pad_bottom], [0, 0]])
+        return (int(iters[0]), int(iters[1])), padding_constant
 
 
 ############################### RESOLVERS ######################################
 
 tf_ops_map = {
-    sympy.sin: sin,
-    sympy.cos: cos,
-    sympy.tan: tan,
-    sympy.asin: asin,
-    sympy.acos: acos,
-    sympy.atan: atan,
-    sympy.tanh: tanh,
-    sympy.sinh: sinh,
-    sympy.cosh: cosh,
+    sp.sin: sin,
+    sp.cos: cos,
+    sp.tan: tan,
+    sp.asin: asin,
+    sp.acos: acos,
+    sp.atan: atan,
+    sp.tanh: tanh,
+    sp.sinh: sinh,
+    sp.cosh: cosh,
 }
 
 
@@ -87,7 +146,7 @@ def resolve_value(val):
                     (sympy_numbers.RationalConstant, sympy_numbers.Rational)):
         return tf.divide(tf.constant(val.p, dtype=tf.float32),
                          tf.constant(val.q, dtype=tf.float32))
-    elif val == sympy.pi:
+    elif val == sp.pi:
         return tf.constant(np.pi, dtype=tf.float32)
 
     else:
@@ -109,31 +168,31 @@ def resolve_formula(formula, symbols):
         index = symbols.index(formula)
         return lambda x: x[index]
 
-    # formula is a symbol (sympy.Symbol('a')) and its string maps to a number
+    # formula is a symbol (sp.Symbol('a')) and its string maps to a number
     # in the dictionary ({'a': 1.0}).  Return it.
-    if isinstance(formula, sympy.Symbol) and formula.name in symbols:
+    if isinstance(formula, sp.Symbol) and formula.name in symbols:
         index = symbols.index(formula.name)
         return lambda x: x[index]
 
-    if isinstance(formula, sympy.Abs):
+    if isinstance(formula, sp.Abs):
         arg = resolve_formula(formula.args[0], symbols)
         return lambda x: tf.abs(arg(x))
 
     # the following resolves common sympy expressions
-    if isinstance(formula, sympy.Add):
+    if isinstance(formula, sp.Add):
         addents = [resolve_formula(arg, symbols) for arg in formula.args]
         return stack(tf.add, addents)
 
-    if isinstance(formula, sympy.Mul):
+    if isinstance(formula, sp.Mul):
         factors = [resolve_formula(arg, symbols) for arg in formula.args]
         return stack(tf.multiply, factors)
 
-    if isinstance(formula, sympy.Pow) and len(formula.args) == 2:
+    if isinstance(formula, sp.Pow) and len(formula.args) == 2:
         base = resolve_formula(formula.args[0], symbols)
         exponent = resolve_formula(formula.args[1], symbols)
         return lambda x: tf.pow(base(x), exponent(x))
 
-    if isinstance(formula, sympy.Pow):
+    if isinstance(formula, sp.Pow):
         base = resolve_formula(formula.args[0], symbols)
         exponent = resolve_formula(formula.args[1], symbols)
         return lambda x: tf.pow(base(x), exponent(x))
@@ -171,7 +230,7 @@ def symbols_in_expr_map(expr_map, to_str=False, sort_key=natural_key):
     """
     all_symbols = set()
     for expr in expr_map:
-        if isinstance(expr, sympy.Basic):
+        if isinstance(expr, sp.Basic):
             all_symbols |= expr.free_symbols
     sorted_symbols = sorted(list(all_symbols), key=sort_key)
     if to_str:
@@ -194,17 +253,17 @@ def symbols_in_op(op):
 
     if isinstance(op, cirq.FSimGate):
         ret = set()
-        if isinstance(op.theta, sympy.Basic):
+        if isinstance(op.theta, sp.Basic):
             ret |= op.theta.free_symbols
-        if isinstance(op.phi, sympy.Basic):
+        if isinstance(op.phi, sp.Basic):
             ret |= op.phi.free_symbols
         return ret
 
     if isinstance(op, cirq.PhasedXPowGate):
         ret = set()
-        if isinstance(op.exponent, sympy.Basic):
+        if isinstance(op.exponent, sp.Basic):
             ret |= op.exponent.free_symbols
-        if isinstance(op.phase_exponent, sympy.Basic):
+        if isinstance(op.phase_exponent, sp.Basic):
             ret |= op.phase_exponent.free_symbols
         return ret
 

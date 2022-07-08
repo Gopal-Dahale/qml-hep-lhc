@@ -74,5 +74,4 @@ class BaseModel(Model):
                             "-q",
                             action="store_true",
                             default=False)
-        parser.add_argument("--feature-map", "-fm", type=str)
         return parser
