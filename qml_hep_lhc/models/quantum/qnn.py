@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Layer, Flatten
 import numpy as np
 from tensorflow import random_uniform_initializer, Variable, constant, shape, repeat, tile, concat, gather
 from qml_hep_lhc.utils import _import_class
-from qml_hep_lhc.models.quantum.utils import symbols_in_expr_map, resolve_formulas, get_count_of_qubits, get_num_in_symbols
+from qml_hep_lhc.layers.utils import symbols_in_expr_map, resolve_formulas, get_count_of_qubits, get_num_in_symbols
 from tensorflow import pad, constant
 
 
