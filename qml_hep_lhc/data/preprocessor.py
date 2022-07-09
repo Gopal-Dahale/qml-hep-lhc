@@ -43,7 +43,7 @@ class DataPreprocessor():
         img_size = self.dims
 
         x = x.reshape(-1, np.prod(img_size))
-        StandardScaler(copy=False).fit_transform(x)
+        x = StandardScaler().fit_transform(x)
         x = x.reshape([-1] + list(img_size))
         return x
 
@@ -54,7 +54,7 @@ class DataPreprocessor():
         print("Normalizing data...")
         img_size = self.dims
         x = x.reshape(-1, np.prod(img_size))
-        normalize(x, copy=False)
+        x = normalize(x)
         x = x.reshape([-1] + list(img_size))
         return x
 
@@ -62,7 +62,7 @@ class DataPreprocessor():
         print("Min-max scaling...")
         img_size = self.dims
         x = x.reshape(-1, np.prod(img_size))
-        MinMaxScaler((-np.pi, np.pi), copy=False).fit_transform(x)
+        x = MinMaxScaler((-np.pi, np.pi)).fit_transform(x)
         x = x.reshape([-1] + list(img_size))
         return x
 
