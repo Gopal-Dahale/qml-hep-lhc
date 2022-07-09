@@ -87,21 +87,21 @@ class TwoLayerPQC(Layer):
 
         # Flatten circuits
         data_circuit, expr_map = cirq.flatten(data_circuit)
-        self.raw_in_symbols = symbols_in_expr_map(expr_map)
-        self.data_expr = list(expr_map)
+        raw_in_symbols = symbols_in_expr_map(expr_map)
+        data_expr = list(expr_map)
+        data_expr_symbols = list(expr_map.values())
 
         var_circuit, expr_map = cirq.flatten(var_circuit)
-        self.var_expr = list(expr_map)
+        var_expr_symbols = list(expr_map.values())
 
         # Align left
         data_circuit = cirq.align_left(data_circuit)
         var_circuit = cirq.align_left(var_circuit)
 
         # Define explicit symbol order and expression resolver
-        symbols = [str(symb) for symb in self.var_expr + self.data_expr]
+        symbols = [str(symb) for symb in var_expr_symbols + data_expr_symbols]
         self.indices = constant([symbols.index(a) for a in sorted(symbols)])
-        self.input_resolver = resolve_formulas(self.data_expr,
-                                               self.raw_in_symbols)
+        self.input_resolver = resolve_formulas(data_expr, raw_in_symbols)
 
         # Define computation layer
         self.empty_circuit = tfq.convert_to_tensor([cirq.Circuit()])
@@ -109,11 +109,13 @@ class TwoLayerPQC(Layer):
             data_circuit + var_circuit, self.observable)
 
     def call(self, input_tensor):
+
         batch_dim = shape(input_tensor)[0]
         x = Flatten()(input_tensor)
         # Pad input tensor to nearest power of 2 in case of amplitude encoding
         # Padded with one to avoid division by zero
         padding = self.num_data_symbols - x.shape[1]
+
         if padding:
             x = pad(x, constant([[0, 0], [0, padding]]), constant_values=1.0)
             x, _ = tf.linalg.normalize(x, axis=1)

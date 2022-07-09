@@ -19,8 +19,6 @@ def get_count_of_qubits(feature_map, input_dim):
 def get_num_in_symbols(feature_map, input_dim):
     if feature_map == 'AmplitudeMap':
         return 2**int(np.ceil(np.log2(np.prod(input_dim))))
-    if feature_map == "DoubleAngleMap":
-        return 2 * np.prod(input_dim)
     return np.prod(input_dim)
 
 
