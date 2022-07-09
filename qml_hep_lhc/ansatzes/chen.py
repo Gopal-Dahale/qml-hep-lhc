@@ -38,7 +38,7 @@ class Chen:
 
         n_qubits = len(qubits)
         # Sympy symbols for variational angles
-        var_symbols = sp.symbols(f'qconv0:{3*n_qubits*n_layers}')
+        var_symbols = sp.symbols(f'θ:{3*n_qubits*n_layers}')
         var_symbols = np.asarray(var_symbols).reshape((n_layers, n_qubits, 3))
 
         circuit = cirq.Circuit()

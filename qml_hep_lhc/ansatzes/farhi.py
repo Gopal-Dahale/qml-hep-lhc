@@ -54,7 +54,7 @@ class Farhi:
         observable = [-0.5 * Z + 0.5 * I]
 
         # Sympy symbols for variational angles
-        var_symbols = sp.symbols(f'qconv0:{n_qubits*n_layers}')
+        var_symbols = sp.symbols(f'θ0:{n_qubits*n_layers}')
         var_symbols = np.asarray(var_symbols).reshape((n_qubits, n_layers))
 
         circuit = cirq.Circuit()
