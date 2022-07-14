@@ -1,12 +1,17 @@
+from logging import warning
 import cirq
 import sympy as sp
 import numpy as np
+import warnings
 
 
 class AmplitudeMap:
 
     def __init__(self):
         super().__init__()
+        warnings.warn(
+            "AmplitudeMap currently does not normalize the input unless padding is needed.\nUser must manually normalize the input."
+        )
 
     def _beta(self, s, j, x):
         index_num = (2 * j - 1) * (2**(s - 1))
@@ -24,7 +29,7 @@ class AmplitudeMap:
         num = (np.sum(np.abs(x[num_start:num_end])**2))**0.5
         den = (np.sum(np.abs(x[den_start:den_end])**2))**0.5
 
-        beta = 2 * sp.asin(num / den) * sp.pi
+        beta = 2 * sp.asin(num / den)
         return beta
 
     def _locate_x(self, curr_j, prev_j, length):
