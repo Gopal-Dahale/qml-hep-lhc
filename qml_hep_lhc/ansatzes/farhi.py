@@ -61,20 +61,24 @@ class Farhi:
         gates = self._generate_gates()
         num_gates = len(gates)
 
+        data_symbols = []
+
         # Prepare the readout qubit
         circuit.append(cirq.X(readout))
         circuit.append(cirq.H(readout))
 
         for l in range(n_layers):
             for index, qubit in enumerate(qubits):
-                circuit.append(gates[l % num_gates](qubit,
-                                                    readout)**var_symbols[index,
-                                                                          l])
+                circuit.append(gates[l % num_gates](
+                    qubit, readout)**var_symbols[index, l])
             # Re-encoding layer
             if drc and (l < n_layers - 1):
-                circuit += feature_map.build(qubits, in_symbols[l])
+                data_circuit, expr = cirq.flatten(
+                    feature_map.build(qubits, in_symbols[l]))
+                circuit += data_circuit
+                data_symbols += list(expr.values())
 
         # Finally, prepare the readout qubit.
         circuit.append(cirq.H(readout))
 
-        return circuit, list(var_symbols.flat), observable
+        return circuit, data_symbols, list(var_symbols.flat), observable

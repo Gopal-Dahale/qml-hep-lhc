@@ -38,8 +38,10 @@ class Chen:
 
         n_qubits = len(qubits)
         # Sympy symbols for variational angles
-        var_symbols = sp.symbols(f'θ:{3*n_qubits*n_layers}')
+        var_symbols = sp.symbols(f'θ0:{3*n_qubits*n_layers}')
         var_symbols = np.asarray(var_symbols).reshape((n_layers, n_qubits, 3))
+
+        data_symbols = []
 
         circuit = cirq.Circuit()
         for l in range(n_layers):
@@ -50,6 +52,9 @@ class Chen:
             ])
             # Re-encoding layer
             if drc and (l < n_layers - 1):
-                circuit += feature_map.build(qubits, in_symbols[l])
+                data_circuit, expr = cirq.flatten(
+                    feature_map.build(qubits, in_symbols[l]))
+                circuit += data_circuit
+                data_symbols += list(expr.values())
 
-        return circuit, list(var_symbols.flat), observable
+        return circuit, data_symbols, list(var_symbols.flat), observable

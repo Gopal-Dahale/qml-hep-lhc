@@ -90,30 +90,36 @@ class Cong:
                 f"n_layers will be set to {num_layers}.")
             n_layers = num_layers
 
-        if drc:
-            print("Cannot use DRC with CONG.")
-
         var_symbols = sp.symbols(
             f'θ0:{n_layers*(NUM_CONV_SYMBOLS + NUM_POOL_SYMBOLS)}')
         var_symbols = np.asarray(var_symbols).reshape(n_layers, -1)
 
+        data_symbols = []
+
         circuit = cirq.Circuit()
         n = n_qubits
-        for i in range(n_layers):
-            conv_start = n - (n // 2**i)
+        for l in range(n_layers):
+            conv_start = n - (n // 2**l)
             pool_source_start = conv_start
-            pool_source_end = n - (n // 2**(i + 1))
+            pool_source_end = n - (n // 2**(l + 1))
             pool_sink_start = pool_source_end
 
-            if i == n_layers - 1:
+            if l == (n_layers - 1):
                 pool_source_end = n - 1
                 pool_sink_start = pool_source_end
 
             circuit += self._quantum_conv_circuit(
-                qubits[conv_start:], var_symbols[i, :NUM_CONV_SYMBOLS])
+                qubits[conv_start:], var_symbols[l, :NUM_CONV_SYMBOLS])
 
             circuit += self._quantum_pool_circuit(
                 qubits[pool_source_start:pool_source_end],
-                qubits[pool_sink_start:], var_symbols[i, NUM_CONV_SYMBOLS:])
+                qubits[pool_sink_start:], var_symbols[l, NUM_CONV_SYMBOLS:])
 
-        return circuit, list(var_symbols.flat), observable
+            # Re-encoding layer
+            if drc and (l < n_layers - 1):
+                data_circuit, expr = cirq.flatten(
+                    feature_map.build(qubits, in_symbols[l]))
+                circuit += data_circuit
+                data_symbols += list(expr.values())
+
+        return circuit, data_symbols, list(var_symbols.flat), observable
