@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.preprocessing import StandardScaler, normalize, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, Normalizer, MinMaxScaler
 from sklearn.decomposition import PCA
 from numba import njit, prange
 from tensorflow import image
@@ -34,37 +34,62 @@ class DataPreprocessor():
         if self._is_binary_data:
             self._binary_data = None
 
-    def standardize(self, x):
+    def standardize(self, x_train, x_test):
         """
         Standardize features by removing the mean and scaling to unit variance.
         """
         print("Standardizing data...")
 
         img_size = self.dims
+        std_slr = StandardScaler()
 
-        x = x.reshape(-1, np.prod(img_size))
-        x = StandardScaler().fit_transform(x)
+        x_train = x_train.reshape(-1, np.prod(img_size))
+        x_test = x_test.reshape(-1, np.prod(img_size))
+
+        x_train = std_slr.fit_transform(x_train)
+        x_test = std_slr.transform(x_test)
+
+        x_train = x_train.reshape([-1] + list(img_size))
         x = x.reshape([-1] + list(img_size))
-        return x
 
-    def normalize_data(self, x):
+        return x_train, x_test
+
+    def normalize_data(self, x_train, x_test):
         """
         Scale input vectors individually to unit norm (vector length).
         """
         print("Normalizing data...")
-        img_size = self.dims
-        x = x.reshape(-1, np.prod(img_size))
-        x = normalize(x)
-        x = x.reshape([-1] + list(img_size))
-        return x
 
-    def min_max_scale(self, x):
-        print("Min-max scaling...")
         img_size = self.dims
-        x = x.reshape(-1, np.prod(img_size))
-        x = MinMaxScaler((-np.pi, np.pi)).fit_transform(x)
+        normalizer = Normalizer()
+
+        x_train = x_train.reshape(-1, np.prod(img_size))
+        x_test = x_test.reshape(-1, np.prod(img_size))
+
+        x_train = normalizer.fit_transform(x_train)
+        x_test = normalizer.transform(x_test)
+
+        x_train = x_train.reshape([-1] + list(img_size))
         x = x.reshape([-1] + list(img_size))
-        return x
+
+        return x_train, x_test
+
+    def min_max_scale(self, x_train, x_test):
+        print("Min-max scaling...")
+
+        img_size = self.dims
+        min_max_slr = MinMaxScaler()
+
+        x_train = x_train.reshape(-1, np.prod(img_size))
+        x_test = x_test.reshape(-1, np.prod(img_size))
+
+        x_train = min_max_slr.fit_transform(x_train)
+        x_test = min_max_slr.transform(x_test)
+
+        x_train = x_train.reshape([-1] + list(img_size))
+        x = x.reshape([-1] + list(img_size))
+
+        return x_train, x_test
 
     def resize(self, x):
         """
@@ -103,7 +128,7 @@ class DataPreprocessor():
             self.classes = [self.classes[d1], self.classes[d2]]
         return x, y
 
-    def pca(self, x, n_components=16):
+    def pca(self, x_train, x_test, n_components=16):
         """
         Performs Principal component analysis (PCA) on the data.
 
@@ -117,17 +142,23 @@ class DataPreprocessor():
         assert sq_root * sq_root == n_components, "Number of components must be a square"
 
         pca_obj = PCA(n_components)
-        x = x.reshape(-1, np.prod(self.dims))
 
-        pca_obj.fit(x)
+        x_train = x_train.reshape(-1, np.prod(self.dims))
+        x_test = x_test.reshape(-1, np.prod(self.dims))
+
+        x_train = pca_obj.fit_transform(x_train)
         cumsum = np.cumsum(pca_obj.explained_variance_ratio_ * 100)[-1]
-        print("Cumulative sum :", cumsum)
-        x = pca_obj.transform(x)
+        print("Cumulative sum on train :", cumsum)
 
-        x = x.reshape(-1, sq_root, sq_root, 1)
+        x_test = pca_obj.transform(x_test)
+        cumsum = np.cumsum(pca_obj.explained_variance_ratio_ * 100)[-1]
+        print("Cumulative sum on test:", cumsum)
+
+        x_train = x_train.reshape(-1, sq_root, sq_root, 1)
+        x_test = x_test.reshape(-1, sq_root, sq_root, 1)
 
         self.dims = (sq_root, sq_root, 1)
-        return x
+        return x_train, x_test
 
     def graph_convolution(self, x):
         print("Performing graph convolution...")
@@ -170,7 +201,7 @@ class DataPreprocessor():
         self.dims = x.shape[1:]
         return x
 
-    def process(self, x, y, config, classes):
+    def process(self, x_train, y_train, x_test, y_test, config, classes):
         """
         Data processing pipeline.
         """
@@ -181,33 +212,41 @@ class DataPreprocessor():
         self.classes = classes
 
         # Add new axis
-        if len(x.shape) == 3:
-            x = x[..., np.newaxis]  # For resizing we need to add one more axis
+        # For resizing we need to add one more axis
+        if len(x_train.shape) == 3:
+            x_train = x_train[..., np.newaxis]
+        if len(x_test.shape) == 3:
+            x_test = x_test[..., np.newaxis]
 
         if self._binary_data and len(self._binary_data) == 2:
-            x, y = self.binary_data(x, y)
+            x_train, y_train = self.binary_data(x_train, y_train)
+            x_test, y_test = self.binary_data(x_test, y_test)
+
+        if self._center_crop:
+            x_train = self.center_crop(x_train, self._center_crop)
+            x_test = self.center_crop(x_test, self._center_crop)
 
         if self._resize is not None and len(self._resize) == 2:
-            x = self.resize(x)
-        if self._center_crop:
-            x = self.center_crop(x, self._center_crop)
-        if self._pca is not None:
-            x = self.pca(x, self._pca)
+            x_train = self.resize(x_train)
+            x_test = self.resize(x_test)
 
+        if self._graph_conv:
+            x_train = self.graph_convolution(x_train)
+            x_test = self.graph_convolution(x_test)
+
+        if self._pca is not None:
+            x_train, x_test = self.pca(x_train, x_test, self._pca)
         if self._standardize:
-            x = self.standardize(x)
+            x_train, x_test = self.standardize(x_train, x_test)
         if self._normalize:
-            x = self.normalize_data(x)
+            x_train, x_test = self.normalize_data(x_train, x_test)
         if self._min_max:
-            x = self.min_max_scale(x)
+            x_train, x_test = self.min_max_scale(x_train, x_test)
 
         if self._labels_to_categorical:
             y = self.labels_to_categorical(y)
 
-        if self._graph_conv:
-            x = self.graph_convolution(x)
-
-        return x, y
+        return x_train, y_train, x_test, y_test
 
     @staticmethod
     def add_to_argparse(parser):

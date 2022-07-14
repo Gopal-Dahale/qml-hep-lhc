@@ -44,12 +44,10 @@ class MNIST(BaseDataModule):
     def setup(self):
         # Preprocess the data
         preprocessor = DataPreprocessor(self.args)
-        self.x_train, self.y_train = preprocessor.process(
-            self.x_train, self.y_train, self.config(), self.classes)
-        self.x_test, self.y_test = preprocessor.process(self.x_test,
-                                                        self.y_test,
-                                                        self.config(),
-                                                        self.classes)
+        self.x_train, self.y_train, self.x_test, self.y_test = preprocessor.process(
+            self.x_train, self.y_train, self.x_test, self.y_test, self.config(),
+            self.classes)
+
         # Set the configuration
         self.dims = preprocessor.dims
         self.output_dims = preprocessor.output_dims
