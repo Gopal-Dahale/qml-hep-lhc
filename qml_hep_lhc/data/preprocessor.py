@@ -244,7 +244,8 @@ class DataPreprocessor():
             x_train, x_test = self.min_max_scale(x_train, x_test)
 
         if self._labels_to_categorical:
-            y = self.labels_to_categorical(y)
+            y_train = self.labels_to_categorical(y_train)
+            y_test = self.labels_to_categorical(y_test)
 
         return x_train, y_train, x_test, y_test
 
