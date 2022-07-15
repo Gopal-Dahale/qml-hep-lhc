@@ -34,8 +34,7 @@ class BaseModel(Model):
         super(BaseModel,
               self).compile(loss=self.loss_fn,
                             metrics=self.accuracy,
-                            optimizer=self.optimizer(learning_rate=self.lr),
-                            run_eagerly=True)
+                            optimizer=self.optimizer(learning_rate=self.lr))
 
     def fit(self, data, callbacks):
         x = data.x_train
