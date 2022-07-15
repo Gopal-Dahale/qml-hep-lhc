@@ -50,7 +50,7 @@ class DataPreprocessor():
         x_test = std_slr.transform(x_test)
 
         x_train = x_train.reshape([-1] + list(img_size))
-        x = x.reshape([-1] + list(img_size))
+        x_test = x_test.reshape([-1] + list(img_size))
 
         return x_train, x_test
 
@@ -70,7 +70,7 @@ class DataPreprocessor():
         x_test = normalizer.transform(x_test)
 
         x_train = x_train.reshape([-1] + list(img_size))
-        x = x.reshape([-1] + list(img_size))
+        x_test = x_test.reshape([-1] + list(img_size))
 
         return x_train, x_test
 
@@ -87,7 +87,7 @@ class DataPreprocessor():
         x_test = min_max_slr.transform(x_test)
 
         x_train = x_train.reshape([-1] + list(img_size))
-        x = x.reshape([-1] + list(img_size))
+        x_test = x_test.reshape([-1] + list(img_size))
 
         return x_train, x_test
 
