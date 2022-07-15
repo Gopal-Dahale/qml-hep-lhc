@@ -5,15 +5,6 @@ from qml_hep_lhc.layers.qconv2d import QConv2D
 from qml_hep_lhc.models.base_model import BaseModel
 
 
-def entangling_circuit(qubits):
-    """
-	Returns a layer of CZ entangling gates on `qubits` (arranged in a circular topology).
-	"""
-    cz_ops = [cirq.CZ(q0, q1) for q0, q1 in zip(qubits, qubits[1:])]
-    cz_ops += ([cirq.CZ(qubits[0], qubits[-1])] if len(qubits) != 2 else [])
-    return cz_ops
-
-
 class QCNNChen(BaseModel):
     """
 	Quantum Convolutional Neural Network.
@@ -23,6 +14,9 @@ class QCNNChen(BaseModel):
     def __init__(self, data_config, args=None):
         super(QCNNChen, self).__init__(args)
         self.args = vars(args) if args is not None else {}
+
+        self.fm_class = "DoubleAngleMap"
+        self.ansatz_class = "Chen"
 
         # Data config
         self.input_dim = data_config["input_dims"]
@@ -34,8 +28,8 @@ class QCNNChen(BaseModel):
             n_layers=1,
             padding="same",
             cluster_state=False,
-            fm_class="DoubleAngleMap",
-            ansatz_class='Chen',
+            fm_class=self.fm_class,
+            ansatz_class=self.ansatz_class,
             drc=False,
             name='conv2d_1',
         )
@@ -47,8 +41,8 @@ class QCNNChen(BaseModel):
             n_layers=1,
             padding="same",
             cluster_state=False,
-            fm_class="DoubleAngleMap",
-            ansatz_class='Chen',
+            fm_class=self.fm_class,
+            ansatz_class=self.ansatz_class,
             drc=False,
             name='conv2d_2',
         )

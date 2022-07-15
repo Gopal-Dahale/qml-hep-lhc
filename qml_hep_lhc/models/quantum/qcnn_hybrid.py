@@ -2,19 +2,16 @@ from email.policy import default
 from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import Flatten, Dense, MaxPool2D
 from qml_hep_lhc.models.base_model import BaseModel
-from qml_hep_lhc.layers import QConv2D, TwoLayerPQC
-import numpy as np
-from qml_hep_lhc.layers.utils import get_count_of_qubits, get_num_in_symbols
-from qml_hep_lhc.utils import _import_class
+from qml_hep_lhc.layers import QConv2D
 
 
-class QCNN(BaseModel):
+class QCNNHybrid(BaseModel):
     """
 	General Quantum Convolutional Neural Network
 	"""
 
     def __init__(self, data_config, args=None):
-        super(QCNN, self).__init__(args)
+        super(QCNNHybrid, self).__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Data config
@@ -31,8 +28,6 @@ class QCNN(BaseModel):
 
         self.drc = self.args.get("drc", False)
 
-        input_shape = [None] + list(self.input_dim)
-
         self.conv2d_1 = QConv2D(
             filters=1,
             kernel_size=3,
@@ -45,8 +40,6 @@ class QCNN(BaseModel):
             drc=self.drc,
             name='conv2d_1',
         )
-
-        input_shape = self.conv2d_1.compute_output_shape(input_shape)
 
         self.conv2d_2 = QConv2D(
             filters=1,
@@ -61,36 +54,22 @@ class QCNN(BaseModel):
             name='conv2d_2',
         )
 
-        input_shape = self.conv2d_2.compute_output_shape(input_shape)
-        n_qubits = get_count_of_qubits(self.fm_class, np.prod(input_shape[1:]))
-        n_inputs = get_num_in_symbols(self.fm_class, np.prod(input_shape[1:]))
-
-        feature_map = _import_class(f"qml_hep_lhc.encodings.{self.fm_class}")()
-        ansatz = _import_class(f"qml_hep_lhc.ansatzes.{self.ansatz_class}")()
-
-        self.vqc = TwoLayerPQC(
-            n_qubits,
-            n_inputs,
-            feature_map,
-            ansatz,
-            self.cluster_state,
-            None,
-            self.n_layers,
-            self.drc,
-        )
+        self.dense1 = Dense(8, activation='relu')
+        self.dense2 = Dense(2, activation='softmax')
 
     def call(self, input_tensor):
         x = self.conv2d_1(input_tensor)
         x = self.conv2d_2(x)
         x = Flatten()(x)
-        x = self.vqc(x)
+        x = self.dense1(x)
+        x = self.dense2(x)
         return x
 
     def build_graph(self):
         x = Input(shape=self.input_dim)
         return Model(inputs=[x],
                      outputs=self.call(x),
-                     name=f"QCNN-{self.fm_class}-{self.ansatz_class}")
+                     name=f"QCNNHybrid-{self.fm_class}-{self.ansatz_class}")
 
     @staticmethod
     def add_to_argparse(parser):

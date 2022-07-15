@@ -41,15 +41,16 @@ class BaseModel(Model):
         x = data.x_train
         y = data.y_train
 
-        return super(BaseModel, self).fit(
-            x=x,
-            y=y,
-            batch_size=self.batch_size,
-            epochs=self.args.get('epochs'),
-            callbacks=callbacks,
-            validation_split=self.args.get('validation_split'),
-            shuffle=True,
-            workers=self.args.get('num_workers'))
+        return super(BaseModel,
+                     self).fit(x=x,
+                               y=y,
+                               batch_size=self.batch_size,
+                               epochs=self.args.get('epochs', 3),
+                               callbacks=callbacks,
+                               validation_split=self.args.get(
+                                   'validation_split', 0.2),
+                               shuffle=True,
+                               workers=self.args.get('num_workers', 4))
 
     def test(self, data, callbacks):
         x = data.x_test
@@ -60,7 +61,7 @@ class BaseModel(Model):
                                     y=y,
                                     callbacks=callbacks,
                                     batch_size=self.batch_size,
-                                    workers=self.args.get('num_workers'))
+                                    workers=self.args.get('num_workers', 4))
 
     @staticmethod
     def add_to_argparse(parser):
