@@ -66,11 +66,11 @@ class TwoLayerPQC(Layer):
 
         # Prepare model circuit
         if self.drc:
-            var_circuit, var_symbols, obs = self.ansatz.build(
+            var_circuit, data_symbols, var_symbols, obs = self.ansatz.build(
                 self.qubits, self.feature_map, self.n_layers, self.drc,
                 self.in_symbols[1:])
         else:
-            var_circuit, var_symbols, obs = self.ansatz.build(
+            var_circuit, data_symbols, var_symbols, obs = self.ansatz.build(
                 self.qubits, self.feature_map, self.n_layers, self.drc)
 
         if self.observable is None:
@@ -86,17 +86,22 @@ class TwoLayerPQC(Layer):
                               name=self.name + "_thetas")
 
         # Flatten circuits
+        data_circuit = cirq.align_left(data_circuit)
+        var_circuit = cirq.align_left(var_circuit)
         data_circuit, expr_map = cirq.flatten(data_circuit)
         raw_in_symbols = symbols_in_expr_map(expr_map)
         data_expr = list(expr_map)
         data_expr_symbols = list(expr_map.values())
 
-        var_circuit, expr_map = cirq.flatten(var_circuit)
-        var_expr_symbols = list(expr_map.values())
+        # var_circuit = cirq.align_left(var_circuit)
+        var_expr_symbols = var_symbols
+        data_expr_symbols += data_symbols
 
-        # Align left
-        data_circuit = cirq.align_left(data_circuit)
-        var_circuit = cirq.align_left(var_circuit)
+        # Non trainable symbols
+        self.data_sym = Variable(initial_value=var_init(
+            shape=(1, len(data_expr_symbols)), dtype="float32"),
+                                 trainable=False,
+                                 name=self.name + "_data_sym")
 
         # Define explicit symbol order and expression resolver
         symbols = [str(symb) for symb in var_expr_symbols + data_expr_symbols]
@@ -122,20 +127,23 @@ class TwoLayerPQC(Layer):
 
         resolved_inputs = self.input_resolver(x)
 
+        # Replace NaNs with zeros
+        resolved_inputs = tf.where(tf.math.is_nan(resolved_inputs),
+                                   tf.zeros_like(resolved_inputs),
+                                   resolved_inputs)
+
         tiled_up_circuits = repeat(self.empty_circuit,
                                    repeats=batch_dim,
                                    name=self.name + "_tiled_up_circuits")
         tiled_up_thetas = tile(self.theta,
                                multiples=[batch_dim, 1],
                                name=self.name + "_tiled_up_thetas")
-
         tiled_up_inputs = tile(resolved_inputs,
                                multiples=[1, self.input_tile_size])
-
         joined_vars = concat([tiled_up_thetas, tiled_up_inputs], axis=1)
         joined_vars = gather(joined_vars,
                              self.indices,
                              axis=1,
                              name=self.name + '_joined_vars')
-
-        return self.computation_layer([tiled_up_circuits, joined_vars])
+        return tf.math.abs(
+            self.computation_layer([tiled_up_circuits, joined_vars]))

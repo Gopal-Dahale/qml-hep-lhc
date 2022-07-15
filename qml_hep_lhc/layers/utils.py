@@ -142,8 +142,8 @@ def resolve_value(val):
         return tf.constant(float(val.p), dtype=tf.float32)
     elif isinstance(val,
                     (sympy_numbers.RationalConstant, sympy_numbers.Rational)):
-        return tf.divide(tf.constant(val.p, dtype=tf.float32),
-                         tf.constant(val.q, dtype=tf.float32))
+        return tf.math.divide_no_nan(tf.constant(val.p, dtype=tf.float32),
+                                     tf.constant(val.q, dtype=tf.float32))
     elif val == sp.pi:
         return tf.constant(np.pi, dtype=tf.float32)
 
@@ -184,6 +184,12 @@ def resolve_formula(formula, symbols):
     if isinstance(formula, sp.Mul):
         factors = [resolve_formula(arg, symbols) for arg in formula.args]
         return stack(tf.multiply, factors)
+
+    if isinstance(formula, sp.GreaterThan):
+        left = resolve_formula(formula.args[0], symbols)
+        right = resolve_formula(formula.args[1], symbols)
+        return lambda x: tf.cast(tf.greater(left(x), right(x)),
+                                 dtype=tf.float32)
 
     if isinstance(formula, sp.Pow) and len(formula.args) == 2:
         base = resolve_formula(formula.args[0], symbols)

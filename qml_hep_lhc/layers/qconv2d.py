@@ -16,19 +16,19 @@ class QConv2D(Layer):
     """
 
     def __init__(
-        self,
-        filters=1,
-        kernel_size=(3, 3),
-        strides=(1, 1),
-        n_layers=1,
-        padding='valid',
-        activation='relu',
-        cluster_state=False,
-        fm_class='AngleMap',
-        ansatz_class='Chen',
-        observable=None,
-        drc=False,
-        name='QConv2D',
+            self,
+            filters=1,
+            kernel_size=(3, 3),
+            strides=(1, 1),
+            n_layers=1,
+            padding='valid',
+            activation='relu',
+            cluster_state=False,
+            fm_class='AngleMap',
+            ansatz_class='Chen',
+            observable=None,
+            drc=False,
+            name='QConv2D',
     ):
 
         super(QConv2D, self).__init__(name=name)
@@ -96,8 +96,8 @@ class QConv2D(Layer):
         conv_out = []
         for i in range(self.iters[0]):
             for j in range(self.iters[1]):
-                x = input_tensor[:, i * s[0]:i * s[0] + k[0],
-                                 j * s[1]:j * s[1] + k[1]]
+                x = input_tensor[:, i * s[0]:i * s[0] + k[0], j *
+                                 s[1]:j * s[1] + k[1]]
                 conv_out += [self.conv_pqcs[filter][channel](x)]
 
         conv_out = Concatenate(axis=1)(conv_out)
