@@ -78,7 +78,7 @@ class DataPreprocessor():
         print("Min-max scaling...")
 
         img_size = self.dims
-        min_max_slr = MinMaxScaler()
+        min_max_slr = MinMaxScaler(feature_range=(-np.pi / 2, np.pi / 2))
 
         x_train = x_train.reshape(-1, np.prod(img_size))
         x_test = x_test.reshape(-1, np.prod(img_size))
