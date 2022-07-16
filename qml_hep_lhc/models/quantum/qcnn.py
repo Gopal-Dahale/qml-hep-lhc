@@ -33,35 +33,29 @@ class QCNN(BaseModel):
 
         input_shape = [None] + list(self.input_dim)
 
-        self.conv2d_1 = QConv2D(
+        self.qconv2d_1 = QConv2D(
             filters=1,
             kernel_size=3,
-            strides=1,
+            strides=2,
             n_layers=self.n_layers,
             padding="same",
             cluster_state=self.cluster_state,
             fm_class=self.fm_class,
             ansatz_class=self.ansatz_class,
             drc=self.drc,
-            name='conv2d_1',
+            name='qconv2d_1',
         )
 
-        input_shape = self.conv2d_1.compute_output_shape(input_shape)
+        input_shape = self.qconv2d_1.compute_output_shape(input_shape)
 
-        self.conv2d_2 = QConv2D(
-            filters=1,
-            kernel_size=2,
-            strides=1,
-            n_layers=self.n_layers,
-            padding="same",
-            cluster_state=self.cluster_state,
-            fm_class=self.fm_class,
-            ansatz_class=self.ansatz_class,
-            drc=self.drc,
-            name='conv2d_2',
-        )
+        if ((np.prod(input_shape[1:]) > 16) and
+            (self.fm_class != "AmplitudeMap")):
+            print(
+                f"Will use max pooling layer since n_qubits = {np.prod(input_shape[1:])} > 16"
+            )
+            self.max_pool = MaxPool2D(pool_size=(2, 2))
+            input_shape = self.max_pool.compute_output_shape(input_shape)
 
-        input_shape = self.conv2d_2.compute_output_shape(input_shape)
         n_qubits = get_count_of_qubits(self.fm_class, np.prod(input_shape[1:]))
         n_inputs = get_num_in_symbols(self.fm_class, np.prod(input_shape[1:]))
 
@@ -80,8 +74,9 @@ class QCNN(BaseModel):
         )
 
     def call(self, input_tensor):
-        x = self.conv2d_1(input_tensor)
-        x = self.conv2d_2(x)
+        x = self.qconv2d_1(input_tensor)
+        if hasattr(self, "max_pool"):
+            x = self.max_pool(x)
         x = Flatten()(x)
         x = self.vqc(x)
         return x

@@ -29,6 +29,13 @@ class VQC(BaseModel):
         if self.ansatz_class is None:
             self.ansatz_class = "Chen"
 
+        if ((np.prod(self.input_dim) > 16) and
+            (self.fm_class != "AmplitudeMap")):
+            print(
+                f"Using Amplitude Map as feature map since n_qubits = {np.prod(self.input_dim)} > 16"
+            )
+            self.fm_class = "AmplitudeMap"
+
         self.drc = self.args.get("drc")
         self.n_qubits = get_count_of_qubits(self.fm_class,
                                             np.prod(self.input_dim))
