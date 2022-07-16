@@ -1,6 +1,6 @@
 from tensorflow.keras.layers import Layer, Flatten
 from qml_hep_lhc.ansatzes.utils import cluster_state_circuit
-from qml_hep_lhc.encodings import AngleMap
+from qml_hep_lhc.encodings import AmplitudeMap
 import cirq
 import sympy as sp
 import numpy as np
@@ -97,6 +97,13 @@ class TwoLayerPQC(Layer):
         var_expr_symbols = var_symbols
         data_expr_symbols += data_symbols
 
+        if not isinstance(self.feature_map, AmplitudeMap):
+            lmbd_init = tf.ones(shape=(len(data_expr_symbols),))
+            self.lmbd = tf.Variable(initial_value=lmbd_init,
+                                    dtype="float32",
+                                    trainable=True,
+                                    name=self.name + "_lambdas")
+
         # Non trainable symbols
         self.data_sym = Variable(initial_value=var_init(
             shape=(1, len(data_expr_symbols)), dtype="float32"),
@@ -119,10 +126,12 @@ class TwoLayerPQC(Layer):
         x = Flatten()(input_tensor)
         # Pad input tensor to nearest power of 2 in case of amplitude encoding
         # Padded with one to avoid division by zero
-        padding = self.num_data_symbols - x.shape[1]
-
-        if padding:
-            x = pad(x, constant([[0, 0], [0, padding]]), constant_values=1.0)
+        if isinstance(self.feature_map, AmplitudeMap):
+            padding = self.num_data_symbols - x.shape[1]
+            if padding:
+                x = pad(x,
+                        constant([[0, 0], [0, padding]]),
+                        constant_values=1.0)
             x, _ = tf.linalg.normalize(x, axis=1)
 
         resolved_inputs = self.input_resolver(x)
@@ -131,7 +140,6 @@ class TwoLayerPQC(Layer):
         resolved_inputs = tf.where(tf.math.is_nan(resolved_inputs),
                                    tf.zeros_like(resolved_inputs),
                                    resolved_inputs)
-
         tiled_up_circuits = repeat(self.empty_circuit,
                                    repeats=batch_dim,
                                    name=self.name + "_tiled_up_circuits")
@@ -140,10 +148,13 @@ class TwoLayerPQC(Layer):
                                name=self.name + "_tiled_up_thetas")
         tiled_up_inputs = tile(resolved_inputs,
                                multiples=[1, self.input_tile_size])
-        joined_vars = concat([tiled_up_thetas, tiled_up_inputs], axis=1)
+        scaled_inputs = tf.einsum("i,ji->ji", self.lmbd, tiled_up_inputs)
+        squashed_inputs = tf.keras.layers.Activation('tanh')(scaled_inputs)
+
+        joined_vars = concat([tiled_up_thetas, squashed_inputs], axis=1)
         joined_vars = gather(joined_vars,
                              self.indices,
                              axis=1,
                              name=self.name + '_joined_vars')
-        return tf.math.abs(
-            self.computation_layer([tiled_up_circuits, joined_vars]))
+        return tf.clip_by_value(
+            self.computation_layer([tiled_up_circuits, joined_vars]), 0, 1)
