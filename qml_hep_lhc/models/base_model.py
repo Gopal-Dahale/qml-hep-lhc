@@ -27,8 +27,8 @@ class BaseModel(Model):
         self.acc_metrics = ['accuracy,', 'AUC']
 
         if self.args.get('use_quantum', False):
-            self.loss = "BinaryCrossentropy"
-            self.loss_fn = getattr(losses, self.loss)(from_logits=True)
+            self.loss = "MeanSquaredError"
+            self.loss_fn = getattr(losses, self.loss)()
 
     def compile(self):
         super(BaseModel,

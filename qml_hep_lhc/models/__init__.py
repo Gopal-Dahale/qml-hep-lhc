@@ -9,3 +9,4 @@ from .quantum.qcnn import QCNN
 from .base_model import BaseModel
 from .quantum.vqc import VQC
 from .quantum.qcnn_cong import QCNNCong
+from .quantum.qcnn_sandwich import QCNNSandwich
