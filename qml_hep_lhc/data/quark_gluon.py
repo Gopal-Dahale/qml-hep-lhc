@@ -2,6 +2,7 @@ from qml_hep_lhc.data.base_data_module import BaseDataModule
 import numpy as np
 from qml_hep_lhc.data.preprocessor import DataPreprocessor
 from sklearn.utils import shuffle
+from qml_hep_lhc.data.utils import extract_samples
 
 
 class QuarkGluon(BaseDataModule):
@@ -28,17 +29,17 @@ class QuarkGluon(BaseDataModule):
         self.x_train, self.y_train = data['x_train'], data['y_train']
         self.x_test, self.y_test = data['x_test'], data['y_test']
 
+        # Extract percent_samples of data from x_train and x_test
+        self.x_train, self.y_train = extract_samples(self.x_train, self.y_train,
+                                                     self.mapping,
+                                                     self.percent_samples)
+        self.x_test, self.y_test = extract_samples(self.x_test, self.y_test,
+                                                   self.mapping,
+                                                   self.percent_samples)
+
         # Shuffle the data
         self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
         self.x_test, self.y_test = shuffle(self.x_test, self.y_test)
-
-        # Extract percent_samples of data from x_train and x_test
-        self.x_train = self.x_train[:int(self.percent_samples *
-                                         len(self.x_train))]
-        self.y_train = self.y_train[:int(self.percent_samples *
-                                         len(self.y_train))]
-        self.x_test = self.x_test[:int(self.percent_samples * len(self.x_test))]
-        self.y_test = self.y_test[:int(self.percent_samples * len(self.y_test))]
 
     def setup(self):
         # Preprocess the data
