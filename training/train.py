@@ -1,15 +1,8 @@
-from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow import train
-import wandb
 from argparse import ArgumentParser
-from os import path, makedirs
+from os import path
 from qml_hep_lhc.utils import _import_class
-from tensorflow.keras.callbacks import ReduceLROnPlateau
-from tensorflow.keras.callbacks import Callback, EarlyStopping
-from tensorflow import concat
-from tensorflow import map_fn
-from cirq.contrib.svg import SVGCircuit
-import io
+from callbacks import _setup_callbacks
 
 
 def _setup_parser():
@@ -23,8 +16,13 @@ def _setup_parser():
 
     # Basic arguments
     parser.add_argument("--wandb", action="store_true", default=False)
+    parser.add_argument("--run-id", type=str, default=None)
     parser.add_argument("--data-class", "-dc", type=str, default="MNIST")
     parser.add_argument("--model-class", "-mc", type=str, default="ResnetV1")
+    parser.add_argument("--checkpoints-dir",
+                        "-cd",
+                        type=str,
+                        default="./checkpoints")
     parser.add_argument("--load-checkpoint", "-lc", type=str, default=None)
     parser.add_argument("--load-latest-checkpoint",
                         "-llc",
@@ -65,90 +63,6 @@ def _setup_parser():
     return parser
 
 
-def _setup_callbacks(args, config, data):
-    """
-    This function initializes and returns a list of callbacks
-
-    Args:
-      args: This is the namespace object that contains all the parameters that we passed in from the
-    command line.
-
-    Returns:
-      A list of callbacks.
-    """
-
-    callbacks = []
-
-    # Wandb callback
-    if args.wandb:
-        wandb.init(project='qml-hep-lhc', config=config)
-        # wandb.run.name = f"{args.data_class}-{args.model_class}"
-        callbacks.append(wandb.keras.WandbCallback(save_weights_only=True))
-
-        # ROC Plot callback for wandb
-        class PRMetrics(Callback):
-
-            def __init__(self, data, use_quantum):
-                self.x = data.x_test
-                self.y = data.y_test
-                self.use_quantum = use_quantum
-                self.classes = data.classes
-
-            def on_train_end(self, logs=None):
-                out = self.model.predict(self.x)
-                if self.use_quantum:
-                    preds = map_fn(lambda x: 1.0 if x >= 0.5 else 0, out)
-                    probs = out
-                    probs = concat((probs, 1 - probs), axis=1)
-                else:
-                    self.y = self.y.argmax(axis=1)
-                    preds = out.argmax(axis=1)
-                    probs = out
-
-                roc_curve = wandb.sklearn.plot_roc(self.y, probs, self.classes)
-                confusion_matrix = wandb.sklearn.plot_confusion_matrix(
-                    self.y, preds, self.classes)
-
-                wandb.log({"roc_curve": roc_curve})
-                wandb.log({"confusion_matrix": confusion_matrix})
-
-        callbacks.append(PRMetrics(data, args.use_quantum))
-
-    checkpoint_path = './checkpoints/'
-    checkpoint_dir = path.dirname(checkpoint_path)
-    if not path.exists(checkpoint_dir):
-        makedirs(checkpoint_dir)
-
-    # Create a callback that saves the model's weights
-    model_checkpoint_callback = ModelCheckpoint(
-        filepath=checkpoint_path + f"{args.data_class}-{args.model_class}-" +
-        "{epoch:03d}-{val_loss:.3f}.ckpt",
-        monitor='val_loss',
-        mode='min',
-        verbose=1,
-        save_weights_only=True,
-        save_freq='epoch')
-
-    callbacks.append(model_checkpoint_callback)
-
-    # LR Scheduler callback
-    lr_scheduler_callback = ReduceLROnPlateau(monitor='val_loss',
-                                              factor=0.1,
-                                              patience=5,
-                                              min_delta=0.0001,
-                                              min_lr=1e-6)
-
-    callbacks.append(lr_scheduler_callback)
-
-    # Early Stopping Callback
-    early_stopping_callback = EarlyStopping(monitor='val_loss',
-                                            mode="min",
-                                            patience=20)
-
-    callbacks.append(early_stopping_callback)
-    return callbacks
-
-
 def get_configuration(parser, args, data, model):
     arg_grps = {}
     for group in parser._action_groups:
@@ -163,8 +77,11 @@ def get_configuration(parser, args, data, model):
     arg_grps['Base Model Args']['scheduler'] = 'ReduceLROnPlateau'
 
     # Additional configurations for quantum model
-    if arg_grps['Base Model Args']['use_quantum']:
+    if hasattr(model, "fm_class"):
         arg_grps['Base Model Args']['feature_map'] = model.fm_class
+    if hasattr(model, "ansatz_class"):
+        arg_grps['Base Model Args']['ansatz'] = model.ansatz_class
+
     return arg_grps
 
 
@@ -188,16 +105,17 @@ def main():
     model_class = _import_class(f"qml_hep_lhc.models.{args.model_class}")
     model = model_class(data.config(), args)  # Model
 
+    config = get_configuration(parser, args, data, model)
+    callbacks, checkpoint_path = _setup_callbacks(args, config, data)
+
     if args.load_latest_checkpoint:
-        latest = train.latest_checkpoint(path.dirname('./checkpoints/'))
-        print(latest)
+        latest = train.latest_checkpoint(checkpoint_path)
+        print("Loading latest checkpoint from", latest)
         model.load_weights(latest)
+        print("Loaded latest checkpoint")
 
     elif args.load_checkpoint is not None:
         model.load_weights(args.load_checkpoint)
-
-    config = get_configuration(parser, args, data, model)
-    callbacks = _setup_callbacks(args, config, data)
 
     print(model.build_graph().summary(
         expand_nested=True))  # Print the Model summary
