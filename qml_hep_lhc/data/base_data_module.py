@@ -99,16 +99,40 @@ class BaseDataModule():
         rows = [["X", self.x_train.shape, self.x_test.shape, self.dims],
                 ["y", self.y_train.shape, self.y_test.shape, self.output_dims]]
 
-        data = f"Dataset :{name}\n"
+        data = f"\nDataset :{name}\n"
         data += tabulate(rows, headers, tablefmt="fancy_grid") + "\n\n"
-        data += "Train images stats\n"
-        data += f"Min: {self.x_train.min():.2f}\n"
-        data += f"Max: {self.x_train.max():.2f}\n"
-        data += f"Mean: {self.x_train.mean():.2f}\n"
-        data += f"Std: {self.x_train.std():.2f}\n"
-        data += "Train labels stats\n"
-        data += f"Min: {self.y_train.min():.2f}\n"
-        data += f"Max: {self.y_train.max():.2f}\n"
+
+        headers = [
+            "Type", "Min", "Max", "Mean", "Std", "Samples for each class"
+        ]
+
+        rows = [
+            [
+                "Train Images", f"{self.x_train.min():.2f}",
+                f"{self.x_train.max():.2f}", f"{self.x_train.mean():.2f}",
+                f"{self.x_train.std():.2f}",
+                ([len(self.x_train[self.y_train == i]) for i in (self.mapping)])
+            ],
+            [
+                "Train Labels", f"{self.y_train.min():.2f}",
+                f"{self.y_train.max():.2f}", f"{self.y_train.mean():.2f}",
+                f"{self.y_train.std():.2f}"
+            ],
+            [
+                "Test Images", f"{self.x_test.min():.2f}",
+                f"{self.x_test.max():.2f}", f"{self.x_test.mean():.2f}",
+                f"{self.x_test.std():.2f}",
+                ([len(self.x_test[self.y_test == i]) for i in (self.mapping)])
+            ],
+            [
+                "Test Labels", f"{self.y_test.min():.2f}",
+                f"{self.y_test.max():.2f}", f"{self.y_test.mean():.2f}",
+                f"{self.y_test.std():.2f}"
+            ]
+        ]
+
+        data += tabulate(rows, headers, tablefmt="fancy_grid") + "\n\n"
+
         return data
 
 
