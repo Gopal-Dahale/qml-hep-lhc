@@ -14,8 +14,8 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 class PRMetrics(Callback):
 
     def __init__(self, data, use_quantum):
-        self.x = data.x_test
-        self.y = data.y_test
+        self.x = data.x_train
+        self.y = data.y_train
         self.use_quantum = use_quantum
         self.classes = data.classes
 
@@ -24,7 +24,7 @@ class PRMetrics(Callback):
         if self.use_quantum:
             preds = map_fn(lambda x: 1.0 if x >= 0.5 else 0, out)
             probs = out
-            probs = concat((probs, 1 - probs), axis=1)
+            probs = concat((1 - probs, probs), axis=1)
         else:
             self.y = self.y.argmax(axis=1)
             preds = out.argmax(axis=1)
