@@ -148,10 +148,12 @@ class TwoLayerPQC(Layer):
                                name=self.name + "_tiled_up_thetas")
         tiled_up_inputs = tile(resolved_inputs,
                                multiples=[1, self.input_tile_size])
-        scaled_inputs = tf.einsum("i,ji->ji", self.lmbd, tiled_up_inputs)
-        squashed_inputs = tf.keras.layers.Activation('tanh')(scaled_inputs)
 
-        joined_vars = concat([tiled_up_thetas, squashed_inputs], axis=1)
+        if not isinstance(self.feature_map, AmplitudeMap):
+            scaled_inputs = tf.einsum("i,ji->ji", self.lmbd, tiled_up_inputs)
+            tiled_up_inputs = tf.keras.layers.Activation('tanh')(scaled_inputs)
+
+        joined_vars = concat([tiled_up_thetas, tiled_up_inputs], axis=1)
         joined_vars = gather(joined_vars,
                              self.indices,
                              axis=1,
