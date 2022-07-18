@@ -30,13 +30,14 @@ class QCNNSandwich(BaseModel):
 
         self.conv2d_1 = Conv2D(1,
                                3,
+                               padding='same',
                                activation='relu',
                                input_shape=self.input_dim)
 
         self.qconv2d_1 = QConv2D(
             filters=1,
             kernel_size=3,
-            strides=1,
+            strides=2,
             n_layers=self.n_layers,
             padding="same",
             cluster_state=self.cluster_state,
@@ -46,7 +47,18 @@ class QCNNSandwich(BaseModel):
             name='qconv2d_1',
         )
 
-        self.dropout = Dropout(0.25)
+        self.qconv2d_2 = QConv2D(
+            filters=1,
+            kernel_size=2,
+            strides=1,
+            n_layers=self.n_layers,
+            padding="same",
+            cluster_state=self.cluster_state,
+            fm_class=self.fm_class,
+            ansatz_class=self.ansatz_class,
+            drc=self.drc,
+            name='qconv2d_2',
+        )
 
         self.dense1 = Dense(8, activation='relu')
         self.dense2 = Dense(2, activation='softmax')
@@ -54,7 +66,7 @@ class QCNNSandwich(BaseModel):
     def call(self, input_tensor):
         x = self.conv2d_1(input_tensor)
         x = self.qconv2d_1(x)
-        x = self.dropout(x)
+        x = self.qconv2d_2(x)
         x = Flatten()(x)
         x = self.dense1(x)
         x = self.dense2(x)
