@@ -3,6 +3,8 @@ from tqdm import tqdm
 from urllib.request import urlretrieve
 from tabulate import tabulate
 import os
+from tensorflow import argmax
+import numpy as np
 
 
 class BaseDataModule():
@@ -106,30 +108,43 @@ class BaseDataModule():
             "Type", "Min", "Max", "Mean", "Std", "Samples for each class"
         ]
 
-        rows = [
-            [
-                "Train Images", f"{self.x_train.min():.2f}",
-                f"{self.x_train.max():.2f}", f"{self.x_train.mean():.2f}",
-                f"{self.x_train.std():.2f}",
-                ([len(self.x_train[self.y_train == i]) for i in (self.mapping)])
-            ],
-            [
-                "Train Labels", f"{self.y_train.min():.2f}",
-                f"{self.y_train.max():.2f}", f"{self.y_train.mean():.2f}",
-                f"{self.y_train.std():.2f}"
-            ],
-            [
-                "Test Images", f"{self.x_test.min():.2f}",
-                f"{self.x_test.max():.2f}", f"{self.x_test.mean():.2f}",
-                f"{self.x_test.std():.2f}",
-                ([len(self.x_test[self.y_test == i]) for i in (self.mapping)])
-            ],
-            [
-                "Test Labels", f"{self.y_test.min():.2f}",
-                f"{self.y_test.max():.2f}", f"{self.y_test.mean():.2f}",
-                f"{self.y_test.std():.2f}"
+        if len(self.y_train.shape) == 2:
+            n_train_samples_per_class = [
+                np.sum(argmax(self.y_train, axis=-1) == i)
+                for i in (self.mapping)
             ]
-        ]
+            n_test_samples_per_class = [
+                np.sum(argmax(self.y_test, axis=-1) == i)
+                for i in (self.mapping)
+            ]
+        else:
+            n_train_samples_per_class = [
+                np.sum(self.y_train == i) for i in (self.mapping)
+            ]
+            n_test_samples_per_class = [
+                np.sum(self.y_test == i) for i in (self.mapping)
+            ]
+
+        rows = [[
+            "Train Images", f"{self.x_train.min():.2f}",
+            f"{self.x_train.max():.2f}", f"{self.x_train.mean():.2f}",
+            f"{self.x_train.std():.2f}", n_train_samples_per_class
+        ],
+                [
+                    "Train Labels", f"{self.y_train.min():.2f}",
+                    f"{self.y_train.max():.2f}", f"{self.y_train.mean():.2f}",
+                    f"{self.y_train.std():.2f}"
+                ],
+                [
+                    "Test Images", f"{self.x_test.min():.2f}",
+                    f"{self.x_test.max():.2f}", f"{self.x_test.mean():.2f}",
+                    f"{self.x_test.std():.2f}", n_test_samples_per_class
+                ],
+                [
+                    "Test Labels", f"{self.y_test.min():.2f}",
+                    f"{self.y_test.max():.2f}", f"{self.y_test.mean():.2f}",
+                    f"{self.y_test.std():.2f}"
+                ]]
 
         data += tabulate(rows, headers, tablefmt="fancy_grid") + "\n\n"
 
