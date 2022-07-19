@@ -1,6 +1,7 @@
 from .quantum.qnn import QNN
 from .classical.resnet.v1 import ResnetV1
 from .classical.resnet.v2 import ResnetV2
+from .classical.resnet.resnet50 import Resnet50
 from .quantum.qcnn_chen import QCNNChen
 from .classical.cnn import CNN
 from .classical.mlp import MLP
