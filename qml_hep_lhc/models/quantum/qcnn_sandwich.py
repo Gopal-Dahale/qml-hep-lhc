@@ -1,6 +1,6 @@
 from email.policy import default
 from tensorflow.keras import Input, Model
-from tensorflow.keras.layers import Flatten, Dense, MaxPool2D, Conv2D, Dropout
+from tensorflow.keras.layers import Flatten, Dense, BatchNormalization, Conv2D
 from qml_hep_lhc.models.base_model import BaseModel
 from qml_hep_lhc.layers import QConv2D
 
@@ -29,11 +29,17 @@ class QCNNSandwich(BaseModel):
         self.drc = self.args.get("drc", False)
 
         self.conv2d_1 = Conv2D(1,
-                               3,
-                               padding='same',
+                               1,
+                               padding="same",
                                activation='relu',
                                input_shape=self.input_dim)
 
+        self.conv2d_2 = Conv2D(1,
+                               1,
+                               padding="same",
+                               activation='relu',
+                               input_shape=self.input_dim)
+        self.batch_norm = BatchNormalization()
         self.qconv2d_1 = QConv2D(
             filters=1,
             kernel_size=3,
@@ -47,26 +53,14 @@ class QCNNSandwich(BaseModel):
             name='qconv2d_1',
         )
 
-        self.qconv2d_2 = QConv2D(
-            filters=1,
-            kernel_size=2,
-            strides=1,
-            n_layers=self.n_layers,
-            padding="same",
-            cluster_state=self.cluster_state,
-            fm_class=self.fm_class,
-            ansatz_class=self.ansatz_class,
-            drc=self.drc,
-            name='qconv2d_2',
-        )
-
         self.dense1 = Dense(8, activation='relu')
         self.dense2 = Dense(2, activation='softmax')
 
     def call(self, input_tensor):
         x = self.conv2d_1(input_tensor)
+        x = self.conv2d_2(x)
+        x = self.batch_norm(x)
         x = self.qconv2d_1(x)
-        x = self.qconv2d_2(x)
         x = Flatten()(x)
         x = self.dense1(x)
         x = self.dense2(x)
