@@ -30,6 +30,7 @@ class DataPreprocessor():
         self._pca = self.args.get("pca", None)
         self._graph_conv = self.args.get("graph_conv", False)
         self._center_crop = self.args.get("center_crop", None)
+        self._to_rgb = self.args.get("to_rgb", False)
 
         if self._is_binary_data:
             self._binary_data = None
@@ -222,6 +223,13 @@ class DataPreprocessor():
             x_train, y_train = self.binary_data(x_train, y_train)
             x_test, y_test = self.binary_data(x_test, y_test)
 
+        if self._to_rgb:
+            print("Converting to RGB...")
+            x_train = np.repeat(x_train, 3, axis=-1)
+            x_test = np.repeat(x_test, 3, axis=-1)
+            self.dims = x_train.shape[1:]
+            print(x_train.shape)
+
         if self._center_crop:
             x_train = self.center_crop(x_train, self._center_crop)
             x_test = self.center_crop(x_test, self._center_crop)
@@ -278,6 +286,10 @@ class DataPreprocessor():
                             action="store_true",
                             default=False)
         parser.add_argument("--center-crop", "-cc", type=float, default=None)
+        parser.add_argument("--to-rgb",
+                            "-rgb",
+                            action="store_true",
+                            default=False)
         return parser
 
 
