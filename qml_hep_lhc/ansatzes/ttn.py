@@ -82,7 +82,7 @@ class TTN:
 		
 		Returns:
 			The circuit, the symbols, and the observable.
-				"""
+		"""
         # Observables
         Z = cirq.PauliString(cirq.Z(qubits[-1]))
         I = cirq.PauliString(cirq.I(qubits[-1]))
@@ -90,20 +90,23 @@ class TTN:
 
         n_qubits = len(qubits)
         n_block_qubits = 2
+        n_params_block = 2
         ind_gates = self._compute_indices(qubits, n_block_qubits)
+        n_blocks = int(2**int(np.log2(n_qubits / n_block_qubits)) * 2 - 1)
+        assert len(ind_gates) == n_blocks
 
         # Sympy symbols for variational angles
-        var_symbols = sp.symbols(f'θ0:{3*n_qubits*n_layers}')
-        var_symbols = np.asarray(var_symbols).reshape((n_layers, n_qubits, 3))
+        var_symbols = sp.symbols(f'θ0:{n_layers*n_params_block*n_blocks}')
+        var_symbols = np.asarray(var_symbols).reshape(
+            (n_layers, n_blocks, n_params_block))
 
         data_symbols = []
 
         circuit = cirq.Circuit()
         for l in range(n_layers):
-            circuit += cnot_entangling_circuit(qubits)
             circuit += cirq.Circuit([
-                one_qubit_unitary(q, var_symbols[l, i])
-                for i, q in enumerate(qubits)
+                self._block(w, var_symbols[l, idx])
+                for idx, w in enumerate(ind_gates)
             ])
             # Re-encoding layer
             if drc and (l < n_layers - 1):
