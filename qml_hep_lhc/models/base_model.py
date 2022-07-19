@@ -2,6 +2,7 @@ from tensorflow.keras import Model, losses, optimizers
 from tensorflow.keras.metrics import AUC
 from qml_hep_lhc.utils import _import_class
 from qml_hep_lhc.models.quantum.metrics import qAUC, custom_accuracy
+from tensorflow_addons.optimizers import RectifiedAdam, Lookahead
 
 
 class BaseModel(Model):
@@ -14,10 +15,14 @@ class BaseModel(Model):
         self.loss = self.args.get('loss', "CategoricalCrossentropy")
         self.loss_fn = getattr(losses, self.loss)()
 
-        # Optimizer
-        self.optimizer = getattr(optimizers, self.args.get('optimizer', 'Adam'))
-
         self.lr = self.args.get('learning_rate', 0.002)
+
+        # Optimizer
+        if self.args.get('optimizer', 'Adam') == 'Adam':
+            self.optimizer = getattr(optimizers, 'Adam')(learning_rate=self.lr)
+        elif self.args.get('optimizer', 'Adam') == 'Ranger':
+            radam = RectifiedAdam(learning_rate=self.lr)
+            self.optimizer = Lookahead(radam, sync_period=6, slow_step_size=0.5)
 
         # Learning rate scheduler
         self.batch_size = self.args.get('batch_size', 128)
@@ -31,10 +36,9 @@ class BaseModel(Model):
             self.loss_fn = getattr(losses, self.loss)()
 
     def compile(self):
-        super(BaseModel,
-              self).compile(loss=self.loss_fn,
-                            metrics=self.accuracy,
-                            optimizer=self.optimizer(learning_rate=self.lr))
+        super(BaseModel, self).compile(loss=self.loss_fn,
+                                       metrics=self.accuracy,
+                                       optimizer=self.optimizer)
 
     def fit(self, data, callbacks):
         x = data.x_train
