@@ -18,3 +18,12 @@ def create_tf_ds(x, y, batch_size):
     ds = ds.batch(batch_size)
     ds = ds.prefetch(AUTOTUNE)
     return ds
+
+
+def tf_ds_to_numpy(ds):
+    ds = ds.unbatch()
+    ds = ds.as_numpy_iterator()
+    ds = [element for element in ds]
+    x = np.array([x for x, _ in ds])
+    y = np.array([y for _, y in ds])
+    return x, y
