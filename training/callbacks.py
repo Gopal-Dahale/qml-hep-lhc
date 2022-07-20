@@ -8,18 +8,19 @@ from os import path, makedirs
 from pathlib import Path
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
+from qml_hep_lhc.data.utils import tf_ds_to_numpy
 
 
 # ROC Plot callback for wandb
 class PRMetrics(Callback):
 
     def __init__(self, data, use_quantum):
-        self.ds = data.test_ds
+        self.x, self.y = tf_ds_to_numpy(data.test_ds)
         self.use_quantum = use_quantum
         self.classes = data.classes
 
     def on_train_end(self, logs=None):
-        out = self.model.predict(self.ds)
+        out = self.model.predict(self.x)
         if self.use_quantum:
             preds = map_fn(lambda x: 1.0 if x >= 0.5 else 0, out)
             probs = out
