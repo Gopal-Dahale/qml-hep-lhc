@@ -1,3 +1,4 @@
+from email.policy import default
 from pathlib import Path
 from tqdm import tqdm
 from urllib.request import urlretrieve
@@ -5,6 +6,10 @@ from tabulate import tabulate
 import os
 from tensorflow import argmax
 import numpy as np
+from qml_hep_lhc.data.utils import extract_samples, create_tf_ds
+from sklearn.utils import shuffle
+from qml_hep_lhc.data.preprocessor import DataPreprocessor
+from sklearn.model_selection import train_test_split
 
 
 class BaseDataModule():
@@ -37,10 +42,18 @@ class BaseDataModule():
         self.y_train = None
         self.x_test = None
         self.y_test = None
+        self.train_ds = None
+        self.test_ds = None
+        self.val_ds = None
 
         # Parse arguments
         self.batch_size = self.args.get("batch_size", 128)
-
+        self.validation_split = self.args.get("validation_split", 0.2)
+        self.processed = self.args.get("processed", False)
+        
+        if self.processed:
+            self.data_dir = self.processed_data_dir
+        
         # Percent of data to use for training and testing
         self.percent_samples = self.args.get("percent_samples", 1.0)
 
@@ -65,6 +78,14 @@ class BaseDataModule():
                             type=float,
                             default=1.0)
         parser.add_argument("--data-dir", "-data-dir", type=str, default=None)
+        parser.add_argument("--validation-split",
+                            "-val-split",
+                            type=float,
+                            default=0.2)
+        parser.add_argument("--processed",
+                            "-processed",
+                            action="store_true",
+                            default=False)
         return parser
 
     def config(self):
@@ -88,7 +109,48 @@ class BaseDataModule():
         """
         Split into train, val, test, and set dims and other tasks.
         """
-        pass
+        # Extract percent_samples of data from x_train and x_test
+        self.x_train, self.y_train = extract_samples(self.x_train, self.y_train,
+                                                     self.mapping,
+                                                     self.percent_samples)
+        self.x_test, self.y_test = extract_samples(self.x_test, self.y_test,
+                                                   self.mapping,
+                                                   self.percent_samples)
+
+        # Shuffle the data
+        self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
+        self.x_test, self.y_test = shuffle(self.x_test, self.y_test)
+
+        # Preprocess the data
+        preprocessor = DataPreprocessor(self.args)
+        self.x_train, self.y_train, self.x_test, self.y_test = preprocessor.process(
+            self.x_train, self.y_train, self.x_test, self.y_test, self.config(),
+            self.classes)
+
+        # Set the configuration
+        self.dims = preprocessor.dims
+        self.output_dims = preprocessor.output_dims
+        self.mapping = preprocessor.mapping
+        self.classes = preprocessor.classes
+
+        # Get validation data from training data
+        self.x_train, self.x_val, self.y_train, self.y_val = train_test_split(
+            self.x_train,
+            self.y_train,
+            test_size=self.validation_split,
+            random_state=42,
+            stratify=self.y_train)
+
+        # Set the data
+        self.train_ds = create_tf_ds(self.x_train, self.y_train,
+                                     self.batch_size)
+        del self.x_train, self.y_train
+
+        self.val_ds = create_tf_ds(self.x_val, self.y_val, self.batch_size)
+        del self.x_val, self.y_val
+
+        self.test_ds = create_tf_ds(self.x_test, self.y_test, self.batch_size)
+        del self.x_test, self.y_test
 
     def __repr__(self, name) -> str:
         """
@@ -97,9 +159,21 @@ class BaseDataModule():
         Args:
           name: The name of the dataset.
         """
-        headers = ["Data", "Train size", "Test size", "Dims"]
-        rows = [["X", self.x_train.shape, self.x_test.shape, self.dims],
-                ["y", self.y_train.shape, self.y_test.shape, self.output_dims]]
+        train_stats = get_stats(self.train_ds, self.mapping)
+        test_stats = get_stats(self.test_ds, self.mapping)
+        val_stats = get_stats(self.val_ds, self.mapping)
+
+        headers = ["Data", "Train size", "Val size", "Test size", "Dims"]
+
+        r1 = [
+            "X", train_stats['x_size'], val_stats['x_size'],
+            test_stats['x_size'], self.dims
+        ]
+        r2 = [
+            "y", train_stats['y_size'], val_stats['y_size'],
+            test_stats['y_size'], self.output_dims
+        ]
+        rows = [r1, r2]
 
         data = f"\nDataset :{name}\n"
         data += tabulate(rows, headers, tablefmt="fancy_grid") + "\n\n"
@@ -108,43 +182,22 @@ class BaseDataModule():
             "Type", "Min", "Max", "Mean", "Std", "Samples for each class"
         ]
 
-        if len(self.y_train.shape) == 2:
-            n_train_samples_per_class = [
-                np.sum(argmax(self.y_train, axis=-1) == i)
-                for i in (self.mapping)
-            ]
-            n_test_samples_per_class = [
-                np.sum(argmax(self.y_test, axis=-1) == i)
-                for i in (self.mapping)
-            ]
-        else:
-            n_train_samples_per_class = [
-                np.sum(self.y_train == i) for i in (self.mapping)
-            ]
-            n_test_samples_per_class = [
-                np.sum(self.y_test == i) for i in (self.mapping)
-            ]
-
-        rows = [[
-            "Train Images", f"{self.x_train.min():.2f}",
-            f"{self.x_train.max():.2f}", f"{self.x_train.mean():.2f}",
-            f"{self.x_train.std():.2f}", n_train_samples_per_class
-        ],
-                [
-                    "Train Labels", f"{self.y_train.min():.2f}",
-                    f"{self.y_train.max():.2f}", f"{self.y_train.mean():.2f}",
-                    f"{self.y_train.std():.2f}"
-                ],
-                [
-                    "Test Images", f"{self.x_test.min():.2f}",
-                    f"{self.x_test.max():.2f}", f"{self.x_test.mean():.2f}",
-                    f"{self.x_test.std():.2f}", n_test_samples_per_class
-                ],
-                [
-                    "Test Labels", f"{self.y_test.min():.2f}",
-                    f"{self.y_test.max():.2f}", f"{self.y_test.mean():.2f}",
-                    f"{self.y_test.std():.2f}"
-                ]]
+        r1 = [
+            "Train Images", f"{train_stats['min']:.2f}",
+            f"{train_stats['max']:.2f}", f"{train_stats['mean']:.2f}",
+            f"{train_stats['std']:.2f}", train_stats['n_samples_per_class']
+        ]
+        r2 = [
+            "Val Images", f"{val_stats['min']:.2f}", f"{val_stats['max']:.2f}",
+            f"{val_stats['mean']:.2f}", f"{val_stats['std']:.2f}",
+            val_stats['n_samples_per_class']
+        ]
+        r3 = [
+            "Test Images", f"{test_stats['min']:.2f}",
+            f"{test_stats['max']:.2f}", f"{test_stats['mean']:.2f}",
+            f"{test_stats['std']:.2f}", test_stats['n_samples_per_class']
+        ]
+        rows = [r1, r2, r3]
 
         data += tabulate(rows, headers, tablefmt="fancy_grid") + "\n\n"
 
@@ -156,7 +209,7 @@ class TqdmUpTo(tqdm):
 
     def update_to(self, blocks=1, bsize=1, tsize=None):
         """
-        Parameters
+        Parametersy_train
         ----------
         blocks: int, optional
             Number of blocks transferred so far [default: 1].
@@ -182,3 +235,34 @@ def _download_raw_dataset(url, filename):
     with TqdmUpTo(unit="B", unit_scale=True, unit_divisor=1024,
                   miniters=1) as t:
         urlretrieve(url, filename, reporthook=t.update_to, data=None)  # nosec
+
+
+def get_stats(ds, mapping):
+    ds = ds.unbatch()
+    ds = ds.as_numpy_iterator()
+    ds = [element for element in ds]
+    x = np.array([element[0] for element in ds])
+    y = np.array([element[1] for element in ds])
+    x_size = x.shape
+    y_size = y.shape
+    max = x.max()
+    min = x.min()
+    mean = x.mean()
+    std = x.std()
+
+    if len(y_size) == 2:
+        n_samples_per_class = [
+            np.sum(argmax(y, axis=-1) == i) for i in (mapping)
+        ]
+    else:
+        n_samples_per_class = [np.sum(y == i) for i in (mapping)]
+
+    return {
+        "x_size": x_size,
+        "y_size": y_size,
+        "max": max,
+        "min": min,
+        "mean": mean,
+        "std": std,
+        "n_samples_per_class": n_samples_per_class
+    }

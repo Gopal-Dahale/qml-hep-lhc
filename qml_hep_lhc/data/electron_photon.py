@@ -43,31 +43,6 @@ class ElectronPhoton(BaseDataModule):
         self.x_train, self.y_train = data['x_train'], data['y_train']
         self.x_test, self.y_test = data['x_test'], data['y_test']
 
-        # Extract percent_samples of data from x_train and x_test
-        self.x_train, self.y_train = extract_samples(self.x_train, self.y_train,
-                                                     self.mapping,
-                                                     self.percent_samples)
-        self.x_test, self.y_test = extract_samples(self.x_test, self.y_test,
-                                                   self.mapping,
-                                                   self.percent_samples)
-
-        # Shuffle the data
-        self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
-        self.x_test, self.y_test = shuffle(self.x_test, self.y_test)
-
-    def setup(self):
-
-        # Preprocess the data
-        preprocessor = DataPreprocessor(self.args)
-        self.x_train, self.y_train, self.x_test, self.y_test = preprocessor.process(
-            self.x_train, self.y_train, self.x_test, self.y_test, self.config(),
-            self.classes)
-        # Set the configuration
-        self.dims = preprocessor.dims
-        self.output_dims = preprocessor.output_dims
-        self.mapping = preprocessor.mapping
-        self.classes = preprocessor.classes
-
     def __repr__(self) -> str:
         return super().__repr__("Electron Photon " + self.dataset_type)
 

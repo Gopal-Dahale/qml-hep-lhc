@@ -1,8 +1,6 @@
 from tensorflow.keras.datasets import mnist
 from qml_hep_lhc.data.base_data_module import BaseDataModule
-from qml_hep_lhc.data.preprocessor import DataPreprocessor
-from sklearn.utils import shuffle
-from qml_hep_lhc.data.utils import extract_samples
+import numpy as np
 
 
 class MNIST(BaseDataModule):
@@ -10,7 +8,7 @@ class MNIST(BaseDataModule):
     MNIST Data module
     """
 
-    def __init__(self, args):
+    def __init__(self, args=None) -> None:
         super().__init__(args)
 
         self.classes = list(range(10))
@@ -25,34 +23,16 @@ class MNIST(BaseDataModule):
 
     def prepare_data(self):
         # Load the data
-        (self.x_train,
-         self.y_train), (self.x_test,
-                         self.y_test) = mnist.load_data(self.filename)
 
-        # Extract percent_samples of data from x_train and x_test
-        self.x_train, self.y_train = extract_samples(self.x_train, self.y_train,
-                                                     self.mapping,
-                                                     self.percent_samples)
-        self.x_test, self.y_test = extract_samples(self.x_test, self.y_test,
-                                                   self.mapping,
-                                                   self.percent_samples)
-
-        # Shuffle the data
-        self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
-        self.x_test, self.y_test = shuffle(self.x_test, self.y_test)
-
-    def setup(self):
-        # Preprocess the data
-        preprocessor = DataPreprocessor(self.args)
-        self.x_train, self.y_train, self.x_test, self.y_test = preprocessor.process(
-            self.x_train, self.y_train, self.x_test, self.y_test, self.config(),
-            self.classes)
-
-        # Set the configuration
-        self.dims = preprocessor.dims
-        self.output_dims = preprocessor.output_dims
-        self.mapping = preprocessor.mapping
-        self.classes = preprocessor.classes
+        if self.processed:
+            # Extract the data
+            data = np.load(self.filename, allow_pickle=True)
+            self.x_train, self.y_train = data['x_train'], data['y_train']
+            self.x_test, self.y_test = data['x_test'], data['y_test']
+        else:
+            (self.x_train,
+             self.y_train), (self.x_test,
+                             self.y_test) = mnist.load_data(self.filename)
 
     def __repr__(self) -> str:
         return super().__repr__("MNIST")
