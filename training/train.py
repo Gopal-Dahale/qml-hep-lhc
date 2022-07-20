@@ -55,10 +55,6 @@ def _setup_parser():
 
     # model.fit specific arguments
     parser.add_argument("--epochs", "-e", type=int, default=3)
-    parser.add_argument("--validation-split",
-                        "-val-split",
-                        type=float,
-                        default=0.2)
     parser.add_argument("--num-workers", "-workers", type=int, default=4)
     return parser
 
