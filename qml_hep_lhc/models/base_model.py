@@ -1,7 +1,5 @@
 from tensorflow.keras import Model, losses, optimizers
 from tensorflow.keras.metrics import AUC
-from qml_hep_lhc.utils import _import_class
-from qml_hep_lhc.models.quantum.metrics import qAUC, custom_accuracy
 from tensorflow_addons.optimizers import RectifiedAdam, Lookahead
 
 
@@ -19,8 +17,10 @@ class BaseModel(Model):
 
         # Optimizer
         if self.args.get('optimizer', 'Adam') == 'Adam':
+            print("Using Adam optimizer")
             self.optimizer = getattr(optimizers, 'Adam')(learning_rate=self.lr)
         elif self.args.get('optimizer', 'Adam') == 'Ranger':
+            print("Using Ranger optimizer")
             radam = RectifiedAdam(learning_rate=self.lr)
             self.optimizer = Lookahead(radam, sync_period=6, slow_step_size=0.5)
 
@@ -41,27 +41,18 @@ class BaseModel(Model):
                                        optimizer=self.optimizer)
 
     def fit(self, data, callbacks):
-        x = data.x_train
-        y = data.y_train
-
         return super(BaseModel,
-                     self).fit(x=x,
-                               y=y,
+                     self).fit(data.train_ds,
                                batch_size=self.batch_size,
                                epochs=self.args.get('epochs', 3),
                                callbacks=callbacks,
-                               validation_split=self.args.get(
-                                   'validation_split', 0.2),
+                               validation_data=data.val_ds,
                                shuffle=True,
                                workers=self.args.get('num_workers', 4))
 
     def test(self, data, callbacks):
-        x = data.x_test
-        y = data.y_test
-
         return super(BaseModel,
-                     self).evaluate(x=x,
-                                    y=y,
+                     self).evaluate(data.test_ds,
                                     callbacks=callbacks,
                                     batch_size=self.batch_size,
                                     workers=self.args.get('num_workers', 4))
