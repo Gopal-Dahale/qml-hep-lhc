@@ -246,7 +246,6 @@ class DataPreprocessor():
             x_train = np.repeat(x_train, 3, axis=-1)
             x_test = np.repeat(x_test, 3, axis=-1)
             self.dims = x_train.shape[1:]
-            print(x_train.shape)
 
         if self._center_crop:
             x_train = self.center_crop(x_train, self._center_crop)
@@ -260,6 +259,8 @@ class DataPreprocessor():
             x_train = self.graph_convolution(x_train)
             x_test = self.graph_convolution(x_test)
 
+        if self._power_transform:
+            x_train, x_test = self.power_transform(x_train, x_test)
         if self._pca is not None:
             x_train, x_test = self.pca(x_train, x_test, self._pca)
         if self._standardize:
@@ -268,8 +269,6 @@ class DataPreprocessor():
             x_train, x_test = self.normalize_data(x_train, x_test)
         if self._min_max:
             x_train, x_test = self.min_max_scale(x_train, x_test)
-        if self._power_transform:
-            x_train, x_test = self.power_transform(x_train, x_test)
 
         if self._labels_to_categorical:
             y_train = self.labels_to_categorical(y_train)
