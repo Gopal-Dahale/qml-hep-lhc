@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.preprocessing import StandardScaler, Normalizer, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, Normalizer, MinMaxScaler, PowerTransformer
 from sklearn.decomposition import PCA
 from numba import njit, prange
 from tensorflow import image
@@ -31,6 +31,7 @@ class DataPreprocessor():
         self._graph_conv = self.args.get("graph_conv", False)
         self._center_crop = self.args.get("center_crop", None)
         self._to_rgb = self.args.get("to_rgb", False)
+        self._power_transform = self.args.get("power_transform", False)
 
         if self._is_binary_data:
             self._binary_data = None
@@ -202,6 +203,23 @@ class DataPreprocessor():
         self.dims = x.shape[1:]
         return x
 
+    def power_transform(self, x_train, x_test):
+        print("Performing power transform...")
+
+        img_size = self.dims
+        pt = PowerTransformer()
+
+        x_train = x_train.reshape(-1, np.prod(img_size))
+        x_test = x_test.reshape(-1, np.prod(img_size))
+
+        x_train = pt.fit_transform(x_train)
+        x_test = pt.transform(x_test)
+
+        x_train = x_train.reshape([-1] + list(img_size))
+        x_test = x_test.reshape([-1] + list(img_size))
+
+        return x_train, x_test
+
     def process(self, x_train, y_train, x_test, y_test, config, classes):
         """
         Data processing pipeline.
@@ -250,6 +268,8 @@ class DataPreprocessor():
             x_train, x_test = self.normalize_data(x_train, x_test)
         if self._min_max:
             x_train, x_test = self.min_max_scale(x_train, x_test)
+        if self._power_transform:
+            x_train, x_test = self.power_transform(x_train, x_test)
 
         if self._labels_to_categorical:
             y_train = self.labels_to_categorical(y_train)
@@ -288,6 +308,10 @@ class DataPreprocessor():
         parser.add_argument("--center-crop", "-cc", type=float, default=None)
         parser.add_argument("--to-rgb",
                             "-rgb",
+                            action="store_true",
+                            default=False)
+        parser.add_argument("--power-transform",
+                            "-pt",
                             action="store_true",
                             default=False)
         return parser
