@@ -21,13 +21,17 @@ class Resnet50(BaseModel):
 
         self.flatten = Flatten()
         self.droput = Dropout(0.25)
-        self.dense = Dense(self.num_classes, activation='softmax')
+        self.dense1 = Dense(512, activation='relu')
+        self.dense2 = Dense(128, activation='relu')
+        self.dense3 = Dense(self.num_classes, activation='softmax')
 
     def call(self, input_tensor):
         x = self.base_model(input_tensor)
         x = self.flatten(x)
         x = self.droput(x)
-        x = self.dense(x)
+        x = self.dense1(x)
+        x = self.dense2(x)
+        x = self.dense3(x)
         return x
 
     def build_graph(self):
