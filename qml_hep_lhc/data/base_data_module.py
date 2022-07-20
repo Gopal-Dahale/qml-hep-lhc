@@ -23,10 +23,12 @@ class BaseDataModule():
 
         # Set the data directories
         self.data_dir = self.data_dirname() / "downloaded"
-        if self.args.get("data_dir") is not None:
-            self.data_dir = Path(self.args.get("data_dir"))
-
         self.processed_data_dir = self.data_dirname() / "processed"
+
+        if self.args.get("data_dir") is not None:
+            self.data_dir = Path(self.args.get("data_dir")) / "downloaded"
+            self.processed_data_dir = Path(
+                self.args.get("data_dir")) / "processed"
 
         # Create data directories if does not exist
         if not self.data_dir.exists():
@@ -50,10 +52,10 @@ class BaseDataModule():
         self.batch_size = self.args.get("batch_size", 128)
         self.validation_split = self.args.get("validation_split", 0.2)
         self.processed = self.args.get("processed", False)
-        
+
         if self.processed:
             self.data_dir = self.processed_data_dir
-        
+
         # Percent of data to use for training and testing
         self.percent_samples = self.args.get("percent_samples", 1.0)
 
