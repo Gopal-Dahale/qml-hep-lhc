@@ -19,6 +19,10 @@ def _setup_parser():
     parser.add_argument("--run-id", type=str, default=None)
     parser.add_argument("--data-class", "-dc", type=str, default="MNIST")
     parser.add_argument("--model-class", "-mc", type=str, default="ResnetV1")
+    parser.add_argument("--save-checkpoint",
+                        "-sc",
+                        action="store_true",
+                        default=False)
     parser.add_argument("--checkpoints-dir",
                         "-cd",
                         type=str,

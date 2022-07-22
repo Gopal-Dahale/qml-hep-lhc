@@ -70,26 +70,28 @@ def _setup_callbacks(args, config, data):
             wandb.keras.WandbCallback(save_weights_only=True, save_graph=False))
         callbacks.append(PRMetrics(data, args.use_quantum))
 
-    try:
-        ansatz = config['Base Model Args']['ansatz']
-        feature_map = config['Base Model Args']['feature_map']
-        checkpoint_path = f'{args.checkpoints_dir}/{args.data_class}/{args.model_class}/{ansatz}/{feature_map}'
-    except:
-        checkpoint_path = f'{args.checkpoints_dir}/{args.data_class}/{args.model_class}'
+    if args.save_checkpoint:
+        try:
+            ansatz = config['Base Model Args']['ansatz']
+            feature_map = config['Base Model Args']['feature_map']
+            checkpoint_path = f'{args.checkpoints_dir}/{args.data_class}/{args.model_class}/{ansatz}/{feature_map}'
+        except:
+            checkpoint_path = f'{args.checkpoints_dir}/{args.data_class}/{args.model_class}'
 
-    checkpoint_dir = path.dirname(checkpoint_path)
-    if not path.exists(checkpoint_dir):
-        makedirs(checkpoint_dir)
+        checkpoint_dir = path.dirname(checkpoint_path)
+        if not path.exists(checkpoint_dir):
+            makedirs(checkpoint_dir)
 
-    filepath = f"{checkpoint_path}/cp.ckpt"
+        filepath = f"{checkpoint_path}/cp.ckpt"
 
-    # Create a callback that saves the model's weights
-    model_checkpoint_callback = ModelCheckpoint(filepath=filepath,
-                                                monitor='val_loss',
-                                                mode='min',
-                                                verbose=1,
-                                                save_weights_only=True,
-                                                save_freq='epoch')
+        # Create a callback that saves the model's weights
+        model_checkpoint_callback = ModelCheckpoint(filepath=filepath,
+                                                    monitor='val_loss',
+                                                    mode='min',
+                                                    verbose=1,
+                                                    save_weights_only=True,
+                                                    save_freq='epoch')
+        callbacks.append(model_checkpoint_callback)
 
     # LR Scheduler callback
     lr_scheduler_callback = ReduceLROnPlateau(monitor='val_loss',
@@ -104,7 +106,6 @@ def _setup_callbacks(args, config, data):
                                             patience=20)
 
     # Append callbacks
-    callbacks.append(model_checkpoint_callback)
     callbacks.append(lr_scheduler_callback)
     callbacks.append(early_stopping_callback)
     return callbacks, checkpoint_path
