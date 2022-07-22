@@ -1,20 +1,18 @@
-from email.policy import default
-from tensorflow.keras import Input, Model
-from tensorflow.keras.layers import Flatten, Dense, MaxPool2D
+from tensorflow.keras.applications import ResNet50
 from qml_hep_lhc.models.base_model import BaseModel
-from qml_hep_lhc.layers import QConv2D, TwoLayerPQC
+from tensorflow.keras.layers import Input, Flatten, Dense, Dropout
+from tensorflow.keras import Model
+import tensorflow as tf
 import numpy as np
 from qml_hep_lhc.layers.utils import get_count_of_qubits, get_num_in_symbols
 from qml_hep_lhc.utils import _import_class
+from qml_hep_lhc.layers import TwoLayerPQC
 
 
-class QCNN(BaseModel):
-    """
-	General Quantum Convolutional Neural Network
-	"""
+class ResnetQ50(BaseModel):
 
     def __init__(self, data_config, args=None):
-        super(QCNN, self).__init__(args)
+        super(ResnetQ50, self).__init__(args)
         self.args = vars(args) if args is not None else {}
 
         # Data config
@@ -33,33 +31,26 @@ class QCNN(BaseModel):
 
         input_shape = [None] + list(self.input_dim)
 
-        self.qconv2d_1 = QConv2D(
-            filters=1,
-            kernel_size=3,
-            strides=2,
-            n_layers=self.n_layers,
-            padding="same",
-            cluster_state=self.cluster_state,
-            fm_class=self.fm_class,
-            ansatz_class=self.ansatz_class,
-            drc=self.drc,
-            name='qconv2d_1',
-        )
+        self.base_model = ResNet50(include_top=False,
+                                   weights='imagenet',
+                                   input_shape=(self.input_dim))
+        self.base_model.trainable = False
+        input_shape = self.base_model.compute_output_shape(input_shape)
 
-        input_shape = self.qconv2d_1.compute_output_shape(input_shape)
+        self.flatten = Flatten()
+        input_shape = self.flatten.compute_output_shape(input_shape)
 
-        if ((np.prod(input_shape[1:]) > 16) and
-            (self.fm_class != "AmplitudeMap")):
-            print(
-                f"Will use max pooling layer since n_qubits = {np.prod(input_shape[1:])} > 16"
-            )
-            self.max_pool = MaxPool2D(pool_size=(2, 2))
-            input_shape = self.max_pool.compute_output_shape(input_shape)
+        self.droput = Dropout(0.25)
+        self.dense1 = Dense(512, activation='relu')
+        input_shape = self.dense1.compute_output_shape(input_shape)
+
+        self.dense2 = Dense(16, activation='relu')
+        input_shape = self.dense2.compute_output_shape(input_shape)
 
         if ((np.prod(input_shape[1:]) > 16) and
             (self.fm_class != "AmplitudeMap")):
             print(
-                f"Will use Amplitude Map since n_qubits = {np.prod(input_shape[1:])} > 16 even after max pooling"
+                f"Will use Amplitude Map since n_qubits = {np.prod(input_shape[1:])} > 16"
             )
             self.fm_class = "AmplitudeMap"
 
@@ -81,18 +72,16 @@ class QCNN(BaseModel):
         )
 
     def call(self, input_tensor):
-        x = self.qconv2d_1(input_tensor)
-        if hasattr(self, "max_pool"):
-            x = self.max_pool(x)
-        x = Flatten()(x)
-        x = self.vqc(x)
-        return x
+        x = self.base_model(input_tensor)
+        x = self.flatten(x)
+        x = self.droput(x)
+        x = self.dense1(x)
+        x = self.dense2(x)
+        return self.vqc(x)
 
     def build_graph(self):
         x = Input(shape=self.input_dim)
-        return Model(inputs=[x],
-                     outputs=self.call(x),
-                     name=f"QCNN-{self.fm_class}-{self.ansatz_class}")
+        return Model(inputs=[x], outputs=self.call(x), name="ResnetQ50")
 
     @staticmethod
     def add_to_argparse(parser):
