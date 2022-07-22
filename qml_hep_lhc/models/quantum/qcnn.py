@@ -77,7 +77,6 @@ class QCNN(BaseModel):
                 f"Will use Amplitude Map since n_qubits = {np.prod(input_shape[1:])} > 16 even after max pooling"
             )
             self.fm_class = "AmplitudeMap"
-            input_shape = self.max_pool.compute_output_shape(input_shape)
 
         n_qubits = get_count_of_qubits(self.fm_class, np.prod(input_shape[1:]))
         n_inputs = get_num_in_symbols(self.fm_class, np.prod(input_shape[1:]))
