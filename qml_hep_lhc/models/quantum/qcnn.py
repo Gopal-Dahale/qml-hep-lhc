@@ -48,19 +48,6 @@ class QCNN(BaseModel):
 
         input_shape = self.qconv2d_1.compute_output_shape(input_shape)
 
-        self.qconv2d_2 = QConv2D(
-            filters=1,
-            kernel_size=2,
-            strides=2,
-            n_layers=self.n_layers,
-            padding="same",
-            cluster_state=self.cluster_state,
-            fm_class=self.fm_class,
-            ansatz_class=self.ansatz_class,
-            drc=self.drc,
-            name='qconv2d_2',
-        )
-
         input_shape = self.qconv2d_2.compute_output_shape(input_shape)
 
         if ((np.prod(input_shape[1:]) > 16) and
@@ -97,7 +84,6 @@ class QCNN(BaseModel):
 
     def call(self, input_tensor):
         x = self.qconv2d_1(input_tensor)
-        x = self.qconv2d_2(x)
         if hasattr(self, "max_pool"):
             x = self.max_pool(x)
         x = Flatten()(x)
