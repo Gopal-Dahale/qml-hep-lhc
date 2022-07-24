@@ -106,10 +106,10 @@ def main():
     model = model_class(data.config(), args)  # Model
 
     config = get_configuration(parser, args, data, model)
-    callbacks, checkpoint_path = _setup_callbacks(args, config, data)
+    callbacks, checkpoint_dir = _setup_callbacks(args, config, data)
 
     if args.load_latest_checkpoint:
-        latest = train.latest_checkpoint(checkpoint_path)
+        latest = train.latest_checkpoint(checkpoint_dir)
         print("Loading latest checkpoint from", latest)
         model.load_weights(latest)
         print("Loaded latest checkpoint")

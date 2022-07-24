@@ -70,15 +70,16 @@ def _setup_callbacks(args, config, data):
             wandb.keras.WandbCallback(save_weights_only=True, save_graph=False))
         callbacks.append(PRMetrics(data, args.use_quantum))
 
-    if args.save_checkpoint:
-        try:
-            ansatz = config['Base Model Args']['ansatz']
-            feature_map = config['Base Model Args']['feature_map']
-            checkpoint_path = f'{args.checkpoints_dir}/{args.data_class}/{args.model_class}/{ansatz}/{feature_map}'
-        except:
-            checkpoint_path = f'{args.checkpoints_dir}/{args.data_class}/{args.model_class}'
+    try:
+        ansatz = config['Base Model Args']['ansatz']
+        feature_map = config['Base Model Args']['feature_map']
+        checkpoint_path = f'{args.checkpoints_dir}/{args.data_class}/{args.model_class}/{ansatz}/{feature_map}'
+    except:
+        checkpoint_path = f'{args.checkpoints_dir}/{args.data_class}/{args.model_class}'
 
-        checkpoint_dir = path.dirname(checkpoint_path)
+    checkpoint_dir = path.dirname(checkpoint_path)
+
+    if args.save_checkpoint:
         if not path.exists(checkpoint_dir):
             makedirs(checkpoint_dir)
 
@@ -108,4 +109,4 @@ def _setup_callbacks(args, config, data):
     # Append callbacks
     callbacks.append(lr_scheduler_callback)
     callbacks.append(early_stopping_callback)
-    return callbacks, checkpoint_path
+    return callbacks, checkpoint_dir
