@@ -29,6 +29,8 @@ def cz_entangling_circuit(qubits):
 		Returns:
 			A list of CZ gates.
 		"""
+    if len(qubits) == 1:
+        return []
     cz_ops = [cirq.CZ(q0, q1) for q0, q1 in zip(qubits, qubits[1:])]
     cz_ops += ([cirq.CZ(qubits[-1], qubits[0])] if len(qubits) != 2 else [])
     return cz_ops
@@ -44,6 +46,8 @@ def cnot_entangling_circuit(qubits):
 		Returns:
 			A list of CNOT gates.
 		"""
+    if len(qubits) == 1:
+        return []
     cnot_ops = [cirq.CNOT(q0, q1) for q0, q1 in zip(qubits, qubits[1:])]
     cnot_ops += ([cirq.CNOT(qubits[-1], qubits[0])] if len(qubits) != 2 else [])
     return cnot_ops
@@ -61,6 +65,8 @@ def cluster_state_circuit(qubits):
 		"""
     circuit = cirq.Circuit()
     circuit.append(cirq.H.on_each(qubits))
+    if len(qubits) == 1:
+        return circuit
     for this_bit, next_bit in zip(qubits, qubits[1:] + [qubits[0]]):
         circuit.append(cirq.CZ(this_bit, next_bit))
     return circuit
