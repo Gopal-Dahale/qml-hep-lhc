@@ -4,7 +4,8 @@ from qml_hep_lhc.utils import _import_class
 import cirq
 import numpy as np
 from tensorflow import pad
-from qml_hep_lhc.layers.two_layer_pqc import TwoLayerPQC
+from qml_hep_lhc.layers import TwoLayerPQC
+from qml_hep_lhc.layers import NQubitPQC
 
 
 class QConv2D(Layer):
@@ -20,7 +21,9 @@ class QConv2D(Layer):
             filters=1,
             kernel_size=(3, 3),
             strides=(1, 1),
+            n_qubits=1,
             n_layers=1,
+            sparse=False,
             padding='valid',
             activation='relu',
             cluster_state=False,
@@ -60,33 +63,44 @@ class QConv2D(Layer):
         self.fm_class = fm_class
         self.ansatz_class = ansatz_class
         self.drc = drc
-
-        self.n_qubits = get_count_of_qubits(self.fm_class,
-                                            np.prod(self.kernel_size))
-        self.n_inputs = get_num_in_symbols(self.fm_class,
-                                           np.prod(self.kernel_size))
+        self.n_qubits = n_qubits
+        self.sparse = sparse
 
     def build(self, input_shape):
 
         self.iters, self.padding_constant = convolution_iters(
             input_shape[1:3], self.kernel_size, self.strides, self.padding)
         self.n_channels = input_shape[3]
-        self.feature_map = _import_class(
-            f"qml_hep_lhc.encodings.{self.fm_class}")()
-        self.ansatz = _import_class(
-            f"qml_hep_lhc.ansatzes.{self.ansatz_class}")()
 
         self.conv_pqcs = [[(filter, channel)
                            for channel in range(self.n_channels)]
                           for filter in range(self.filters)]
 
-        for filter in range(self.filters):
-            for channel in range(self.n_channels):
-                name = f"{self.name}_{filter}_{channel}"
-                self.conv_pqcs[filter][channel] = TwoLayerPQC(
-                    self.n_qubits, self.n_inputs, self.feature_map, self.ansatz,
-                    self.cluster_state, self.observable, self.n_layers,
-                    self.drc, name)
+        if self.ansatz_class == 'NQubit':
+            for filter in range(self.filters):
+                for channel in range(self.n_channels):
+                    name = f"{self.name}_{filter}_{channel}"
+                    self.conv_pqcs[filter][channel] = NQubitPQC(
+                        self.n_qubits, self.cluster_state, self.observable,
+                        self.n_layers, self.sparse, name)
+        else:
+            self.n_qubits = get_count_of_qubits(self.fm_class,
+                                                np.prod(self.kernel_size))
+            self.n_inputs = get_num_in_symbols(self.fm_class,
+                                               np.prod(self.kernel_size))
+
+            self.feature_map = _import_class(
+                f"qml_hep_lhc.encodings.{self.fm_class}")()
+            self.ansatz = _import_class(
+                f"qml_hep_lhc.ansatzes.{self.ansatz_class}")()
+
+            for filter in range(self.filters):
+                for channel in range(self.n_channels):
+                    name = f"{self.name}_{filter}_{channel}"
+                    self.conv_pqcs[filter][channel] = TwoLayerPQC(
+                        self.n_qubits, self.n_inputs, self.feature_map,
+                        self.ansatz, self.cluster_state, self.observable,
+                        self.n_layers, self.drc, name)
 
     def _convolution(self, input_tensor, filter, channel):
 
