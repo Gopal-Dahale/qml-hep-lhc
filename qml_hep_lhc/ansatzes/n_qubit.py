@@ -11,7 +11,7 @@ class NQubit:
     def __single_qubit_rot(self, qubit, symbols, sparse):
         print('SPARSE', sparse)
         if sparse:
-            return [cirq.Z(qubit)**(symbols)]
+            return [cirq.Y(qubit)**(symbols)]
         return [[
             cirq.Z(qubit)**symbols[i],
             cirq.Y(qubit)**symbols[i + 1],
@@ -33,18 +33,16 @@ class NQubit:
                 for i, q in enumerate(qubits))
 
             # Alternate CZ entangling circuit
-            if l < n_layers - 1:
-                if (l & 1):
-                    circuit += [
-                        cirq.CZ(q0, q1)
-                        for q0, q1 in zip(qubits[1::2], qubits[2::2] +
-                                          [qubits[0]])
-                    ]
+            if (l & 1):
+                circuit += [
+                    cirq.CZ(q0, q1)
+                    for q0, q1 in zip(qubits[1::2], qubits[2::2] + [qubits[0]])
+                ]
 
-                else:
-                    circuit += [
-                        cirq.CZ(q0, q1)
-                        for q0, q1 in zip(qubits[0::2], qubits[1::2])
-                    ]
+            else:
+                circuit += [
+                    cirq.CZ(q0, q1)
+                    for q0, q1 in zip(qubits[0::2], qubits[1::2])
+                ]
 
         return circuit, [], [], observable
