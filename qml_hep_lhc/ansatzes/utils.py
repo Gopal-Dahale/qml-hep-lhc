@@ -63,13 +63,12 @@ def cluster_state_circuit(qubits):
 		Returns:
 				A circuit that creates a cluster state.
 		"""
-    circuit = cirq.Circuit()
-    circuit.append(cirq.H.on_each(qubits))
+    ops = [cirq.H(q) for q in qubits]
     if len(qubits) == 1:
-        return circuit
-    for this_bit, next_bit in zip(qubits, qubits[1:] + [qubits[0]]):
-        circuit.append(cirq.CZ(this_bit, next_bit))
-    return circuit
+        return ops
+    # ops += [cirq.CZ(q0, q1) for q0, q1 in zip(qubits, qubits[1:])]
+    # ops += ([cirq.CZ(qubits[-1], qubits[0])] if len(qubits) != 2 else [])
+    return ops
 
 
 def two_qubit_unitary(qubits, symbols):
