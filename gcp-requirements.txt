@@ -1,10 +1,4 @@
 cirq==0.15.0
-numba==0.55.2
-numpy==1.21.6
-scikit_learn==1.0.1
-sympy==1.8
-tabulate==0.8.9
 tensorflow_quantum==0.6.1
-tqdm==4.64.0
-reportlab==3.6.10
-wandb==0.12.17
+tabulate==0.8.9
+
