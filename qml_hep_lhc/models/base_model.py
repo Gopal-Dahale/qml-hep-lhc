@@ -38,7 +38,8 @@ class BaseModel(Model):
     def compile(self):
         super(BaseModel, self).compile(loss=self.loss_fn,
                                        metrics=self.accuracy,
-                                       optimizer=self.optimizer)
+                                       optimizer=self.optimizer,
+                                       run_eagerly=True)
 
     def fit(self, data, callbacks):
         return super(BaseModel,
