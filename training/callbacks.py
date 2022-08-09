@@ -61,13 +61,12 @@ def _setup_callbacks(args, config, data):
         wandb.init(project='qml-hep-lhc',
                    config=config,
                    id=run_id,
-                   save_weights_only=False,
-                   save_graph=False,
-                   save_model=False,
                    resume='allow')
 
         callbacks.append(
-            wandb.keras.WandbCallback(save_weights_only=True, save_graph=False))
+            wandb.keras.WandbCallback(save_weights_only=False,
+                                      save_graph=False,
+                                      save_model=False))
         callbacks.append(PRMetrics(data, args.use_quantum))
 
     try:
