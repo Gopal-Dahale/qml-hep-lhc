@@ -1,6 +1,5 @@
-from email.policy import default
 from tensorflow.keras import Input, Model
-from tensorflow.keras.layers import Flatten, Dense, MaxPool2D
+from tensorflow.keras.layers import Flatten, Dense
 from qml_hep_lhc.models.base_model import BaseModel
 from qml_hep_lhc.layers import QConv2D
 
@@ -20,6 +19,8 @@ class QCNNHybrid(BaseModel):
         self.fm_class = self.args.get("feature_map", None)
         self.ansatz_class = self.args.get("ansatz", None)
         self.n_layers = self.args.get("n_layers", 1)
+        self.n_qubits = self.args.get("n_qubits", 1)
+        self.sparse = self.args.get("sparse", False)
 
         if self.fm_class is None:
             self.fm_class = "AngleMap"
@@ -31,9 +32,11 @@ class QCNNHybrid(BaseModel):
         self.qconv2d_1 = QConv2D(
             filters=1,
             kernel_size=3,
-            strides=2,
+            strides=1,
+            n_qubits=self.n_qubits,
             n_layers=self.n_layers,
-            padding="same",
+            sparse=self.sparse,
+            padding="valid",
             cluster_state=self.cluster_state,
             fm_class=self.fm_class,
             ansatz_class=self.ansatz_class,
@@ -66,4 +69,6 @@ class QCNNHybrid(BaseModel):
         parser.add_argument("--ansatz", type=str)
         parser.add_argument("--n-layers", type=int, default=1)
         parser.add_argument("--drc", action="store_true", default=False)
+        parser.add_argument("--n-qubits", type=int, default=1)
+        parser.add_argument("--sparse", action="store_true", default=False)
         return parser
