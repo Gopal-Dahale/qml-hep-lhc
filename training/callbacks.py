@@ -1,11 +1,8 @@
-from fileinput import filename
-from shutil import copyfile
 import wandb
 from tensorflow.keras.callbacks import Callback, EarlyStopping
 from tensorflow import concat
 from tensorflow import map_fn
 from os import path, makedirs
-from pathlib import Path
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from qml_hep_lhc.data.utils import tf_ds_to_numpy
@@ -64,6 +61,9 @@ def _setup_callbacks(args, config, data):
         wandb.init(project='qml-hep-lhc',
                    config=config,
                    id=run_id,
+                   save_weights_only=False,
+                   save_graph=False,
+                   save_model=False,
                    resume='allow')
 
         callbacks.append(
