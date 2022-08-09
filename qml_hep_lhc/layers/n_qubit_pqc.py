@@ -53,8 +53,9 @@ class NQubitPQC(Layer):
         num_biases = self.num_in_symbols
 
         if self.sparse:
-            self.num_in_symbols = self.n_layers * self.n_qubits
-            in_shape = (self.n_layers, self.n_qubits)
+            self.num_in_symbols = self.n_layers * self.n_qubits * 3
+            num_weights *= 3
+            in_shape = (self.n_layers, self.n_qubits, 3)
             num_biases = self.num_in_symbols
 
         in_symbols = sp.symbols(f'w0:{self.num_in_symbols}')
@@ -109,7 +110,12 @@ class NQubitPQC(Layer):
                                    repeats=batch_dim,
                                    name=self.name + "_tiled_up_circuits")
 
-        tiled_up_inputs = tile(x, multiples=[1, self.n_layers * self.n_qubits])
+        if self.sparse is False:
+            tiled_up_inputs = tile(x,
+                                   multiples=[1, self.n_layers * self.n_qubits])
+        else:
+            tiled_up_inputs = tile(
+                x, multiples=[1, self.n_layers * self.n_qubits * 3])
 
         # Multiply by weights
         tiled_up_inputs = multiply(tiled_up_inputs,
@@ -123,24 +129,24 @@ class NQubitPQC(Layer):
                                   name=self.name +
                                   "_tiled_up_inputs_qweights_qbiases")
         else:
-            # Reshape to (batch,n_layers*n_qubits,n_inputs)
-            tile_up_inputs = tf.reshape(
+            # Reshape to (batch,n_layers*n_qubits,3, n_inputs)
+            tiled_up_inputs = tf.reshape(
                 tiled_up_inputs,
-                [batch_dim, self.n_layers * self.n_qubits, self.n_inputs],
+                [batch_dim, self.n_layers * self.n_qubits, 3, self.n_inputs],
                 name=self.name + "_reshaped_inputs")
-
             # Sum over each layer and qubit (w1*x1 + w2*x2 + ...)
             # The new shape is (batch, n_layers*n_qubits)
-            tiled_up_inputs = tf.reduce_sum(tile_up_inputs,
+            tiled_up_inputs = tf.reduce_sum(tiled_up_inputs,
                                             axis=-1,
                                             name=self.name +
                                             "_tiled_up_inputs_reduced_sum")
-
             # Add biases
             tiled_up_inputs = add(tiled_up_inputs,
                                   self.qbiases,
                                   name=self.name +
                                   "_tiled_up_inputs_qweights_qbiases")
+            tiled_up_inputs = tf.reshape(tiled_up_inputs, [batch_dim, -1])
+
         tiled_up_inputs = Activation(
             self.activation)(tiled_up_inputs) * (np.pi / 2)
 

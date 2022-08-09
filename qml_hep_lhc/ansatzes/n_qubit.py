@@ -1,6 +1,4 @@
 import cirq
-import sympy as sp
-import numpy as np
 
 
 class NQubit:
@@ -11,7 +9,11 @@ class NQubit:
     def __single_qubit_rot(self, qubit, symbols, sparse):
         print('SPARSE', sparse)
         if sparse:
-            return [cirq.Y(qubit)**(symbols)]
+            return [
+                cirq.Z(qubit)**symbols[0],
+                cirq.Y(qubit)**symbols[1],
+                cirq.Z(qubit)**symbols[2]
+            ]
         return [[
             cirq.Z(qubit)**symbols[i],
             cirq.Y(qubit)**symbols[i + 1],
