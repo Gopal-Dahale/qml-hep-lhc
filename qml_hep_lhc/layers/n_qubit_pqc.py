@@ -141,11 +141,11 @@ class NQubitPQC(Layer):
                                             name=self.name +
                                             "_tiled_up_inputs_reduced_sum")
             # Add biases
+            tiled_up_inputs = tf.reshape(tiled_up_inputs, [batch_dim, -1])
             tiled_up_inputs = add(tiled_up_inputs,
                                   self.qbiases,
                                   name=self.name +
                                   "_tiled_up_inputs_qweights_qbiases")
-            tiled_up_inputs = tf.reshape(tiled_up_inputs, [batch_dim, -1])
 
         tiled_up_inputs = Activation(
             self.activation)(tiled_up_inputs) * (np.pi / 2)
@@ -154,5 +154,4 @@ class NQubitPQC(Layer):
                              self.indices,
                              axis=1,
                              name=self.name + "_joined_vars")
-        return tf.clip_by_value(
-            self.computation_layer([tiled_up_circuits, joined_vars]), 0, 1)
+        return self.computation_layer([tiled_up_circuits, joined_vars])
