@@ -24,9 +24,17 @@ class NQubit:
               in_symbols=None):
 
         # Observables
-        Z = cirq.PauliString(cirq.Z(qubits[-1]))
-        I = cirq.PauliString(cirq.I(qubits[-1]))
-        observable = [-0.5 * Z + 0.5 * I]
+        # Z = cirq.PauliString(cirq.Z(qubits[-1]))
+        # I = cirq.PauliString(cirq.I(qubits[-1]))
+        # observable = [-0.5 * Z + 0.5 * I]
+
+        observable = []
+        for i in range(len(qubits)):
+            observable += [
+                cirq.X(qubits[i]),
+                cirq.Y(qubits[i]),
+                cirq.Z(qubits[i])
+            ]
 
         circuit = cirq.Circuit()
         for l in range(n_layers):
