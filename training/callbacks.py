@@ -5,6 +5,7 @@ from tensorflow import map_fn
 from os import path, makedirs
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import ReduceLROnPlateau
+import numpy as np
 from qml_hep_lhc.data.utils import tf_ds_to_numpy
 
 
@@ -95,10 +96,10 @@ def _setup_callbacks(args, config, data):
 
     # LR Scheduler callback
     lr_scheduler_callback = ReduceLROnPlateau(monitor='val_loss',
-                                              factor=0.1,
+                                              factor=np.sqrt(0.1),
                                               patience=5,
                                               min_delta=0.0001,
-                                              min_lr=1e-6)
+                                              min_lr=1e-8)
 
     # Early Stopping Callback
     early_stopping_callback = EarlyStopping(monitor='val_loss',
@@ -107,5 +108,5 @@ def _setup_callbacks(args, config, data):
 
     # Append callbacks
     callbacks.append(lr_scheduler_callback)
-    callbacks.append(early_stopping_callback)
+    # callbacks.append(early_stopping_callback)
     return callbacks, checkpoint_dir
