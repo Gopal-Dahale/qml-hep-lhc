@@ -1,7 +1,6 @@
 from tensorflow.keras.layers import Layer, Concatenate, Reshape, Add, Activation
 from qml_hep_lhc.layers.utils import normalize_padding, normalize_tuple, convolution_iters, get_count_of_qubits, get_num_in_symbols
 from qml_hep_lhc.utils import _import_class
-import cirq
 import numpy as np
 from tensorflow import pad
 from qml_hep_lhc.layers import TwoLayerPQC
@@ -115,7 +114,8 @@ class QConv2D(Layer):
                 conv_out += [self.conv_pqcs[filter][channel](x)]
 
         conv_out = Concatenate(axis=1)(conv_out)
-        conv_out = Reshape((self.iters[0], self.iters[1], 1))(conv_out)
+        conv_out = Reshape(
+            (self.iters[0], self.iters[1], 3 * self.n_qubits))(conv_out)
         return conv_out
 
     def call(self, input_tensor):
