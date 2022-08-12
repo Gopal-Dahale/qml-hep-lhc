@@ -44,11 +44,27 @@ class QCNNHybrid(BaseModel):
             name='qconv2d_1',
         )
 
+        self.qconv2d_2 = QConv2D(
+            filters=1,
+            kernel_size=2,
+            strides=1,
+            n_qubits=self.n_qubits,
+            n_layers=self.n_layers,
+            sparse=self.sparse,
+            padding="valid",
+            cluster_state=self.cluster_state,
+            fm_class=self.fm_class,
+            ansatz_class=self.ansatz_class,
+            drc=self.drc,
+            name='qconv2d_2',
+        )
+
         self.dense1 = Dense(8, activation='relu')
         self.dense2 = Dense(2, activation='softmax')
 
     def call(self, input_tensor):
         x = self.qconv2d_1(input_tensor)
+        x = self.qconv2d_2(x)
         x = Flatten()(x)
         x = self.dense1(x)
         x = self.dense2(x)

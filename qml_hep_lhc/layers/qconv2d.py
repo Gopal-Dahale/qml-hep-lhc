@@ -1,10 +1,10 @@
-from tensorflow.keras.layers import Layer, Concatenate, Reshape, Add, Activation
+from tensorflow.keras.layers import Layer, Add, Activation, Concatenate
 from qml_hep_lhc.layers.utils import normalize_padding, normalize_tuple, convolution_iters, get_count_of_qubits, get_num_in_symbols
 from qml_hep_lhc.utils import _import_class
 import numpy as np
-from tensorflow import pad
 from qml_hep_lhc.layers import TwoLayerPQC
 from qml_hep_lhc.layers import NQubitPQC
+import tensorflow as tf
 
 
 class QConv2D(Layer):
@@ -24,7 +24,7 @@ class QConv2D(Layer):
             n_layers=1,
             sparse=False,
             padding='valid',
-            activation='relu',
+            activation='tanh',
             cluster_state=False,
             fm_class='AngleMap',
             ansatz_class='Chen',
@@ -65,6 +65,8 @@ class QConv2D(Layer):
         self.n_qubits = n_qubits
         self.sparse = sparse
 
+        self.len_obs = self.n_qubits * 3
+
     def build(self, input_shape):
 
         self.iters, self.padding_constant = convolution_iters(
@@ -101,40 +103,73 @@ class QConv2D(Layer):
                         self.ansatz, self.cluster_state, self.observable,
                         self.n_layers, self.drc, name)
 
-    def _convolution(self, input_tensor, filter, channel):
-
-        s = self.strides
-        k = self.kernel_size
-
-        conv_out = []
-        for i in range(self.iters[0]):
-            for j in range(self.iters[1]):
-                x = input_tensor[:, i * s[0]:i * s[0] + k[0], j *
-                                 s[1]:j * s[1] + k[1]]
-                conv_out += [self.conv_pqcs[filter][channel](x)]
-
-        conv_out = Concatenate(axis=1)(conv_out)
-        conv_out = Reshape(
-            (self.iters[0], self.iters[1], 3 * self.n_qubits))(conv_out)
+    def _convolution(self, x, filter, channel):
+        conv_out = self.conv_pqcs[filter][channel](x)
         return conv_out
+        # s = self.strides
+        # k = self.kernel_size
 
-    def call(self, input_tensor):
-        input_tensor = pad(input_tensor, self.padding_constant)
+        # conv_out = []
+        # for i in range(self.iters[0]):
+        #     for j in range(self.iters[1]):
+        #         x = input_tensor[:, i * s[0]:i * s[0] + k[0], j *
+        #                          s[1]:j * s[1] + k[1]]
+        #         conv_out += [self.conv_pqcs[filter][channel](x)]
 
-        if self.n_channels == 1:
+        # conv_out = Concatenate(axis=1)(conv_out)
+        # conv_out = Reshape((self.iters[0], self.iters[1], 1))(conv_out)
+        # return conv_out
+
+    def call(self, x):
+        if len(x.shape) == 4:
+            x = tf.expand_dims(x, -1)  # NHWCD
+        depth = x.shape[-1]
+        x = tf.transpose(x, [0, 3, 1, 2, 4])  # NCHWD
+        x = tf.extract_volume_patches(
+            x,
+            ksizes=(1, 1, self.kernel_size[0], self.kernel_size[1], 1),
+            strides=(1, 1, self.strides[0], self.strides[1], 1),
+            padding='VALID',
+        )
+        x = tf.transpose(x, [1, 0, 2, 3, 4])  # CNHWD
+        channels, _, h, w, _ = x.shape
+        x = tf.reshape(x, [channels, -1, np.prod(self.kernel_size)])
+
+        if channels == 1:
             conv_out = [
-                self._convolution(input_tensor[:, :, :, 0], filter, 0)
+                self._convolution(x[0, :, :], filter, 0)
                 for filter in range(self.filters)
             ]
 
         else:
             conv_out = [
                 Add()([
-                    self._convolution(input_tensor[:, :, :, c], filter, c)
+                    self._convolution(x[c, :, :], filter, c)
                     for c in range(self.n_channels)
                 ])
                 for filter in range(self.filters)
             ]
 
         conv_out = Concatenate(axis=-1)(conv_out)
+        conv_out = tf.reshape(conv_out,
+                              [-1, h, w, self.filters, depth * self.len_obs])
         return self.activation(conv_out)
+        # input_tensor = pad(input_tensor, self.padding_constant)
+
+        # if self.n_channels == 1:
+        #     conv_out = [
+        #         self._convolution(input_tensor[:, :, :, 0], filter, 0)
+        #         for filter in range(self.filters)
+        #     ]
+
+        # else:
+        #     conv_out = [
+        #         Add()([
+        #             self._convolution(input_tensor[:, :, :, c], filter, c)
+        #             for c in range(self.n_channels)
+        #         ])
+        #         for filter in range(self.filters)
+        #     ]
+
+        # conv_out = Concatenate(axis=-1)(conv_out)
+        # return self.activation(conv_out)

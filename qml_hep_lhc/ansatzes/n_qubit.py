@@ -35,6 +35,7 @@ class NQubit:
                 cirq.Y(qubits[i]),
                 cirq.Z(qubits[i])
             ]
+        # observable = [cirq.Z(qubits[0])]
 
         circuit = cirq.Circuit()
         for l in range(n_layers):
