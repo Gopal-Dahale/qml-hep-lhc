@@ -1,5 +1,5 @@
 from tensorflow.keras import Input, Model
-from tensorflow.keras.layers import Flatten, Dense
+from tensorflow.keras.layers import Flatten, Dense, Dropout
 from qml_hep_lhc.models.base_model import BaseModel
 from qml_hep_lhc.layers import QConv2D
 
@@ -60,6 +60,7 @@ class QCNNHybrid(BaseModel):
         )
 
         self.dense1 = Dense(8, activation='relu')
+        self.dropout = Dropout(0.25)
         self.dense2 = Dense(2, activation='softmax')
 
     def call(self, input_tensor):
@@ -67,6 +68,7 @@ class QCNNHybrid(BaseModel):
         x = self.qconv2d_2(x)
         x = Flatten()(x)
         x = self.dense1(x)
+        x = self.dropout(x)
         x = self.dense2(x)
         return x
 
