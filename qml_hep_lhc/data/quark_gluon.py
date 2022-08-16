@@ -15,11 +15,14 @@ class QuarkGluon(BaseDataModule):
 
         # Parse args
         self.args['is_binary_data'] = True
-        self.percent_samples = self.args.get("percent_samples", 1.0)
-        self.filename = self.data_dir / 'quark_gluon_med.npz'
+        self.filename = self.data_dir / f"quark_gluon_{self.dataset_type}.npz"
 
     def prepare_data(self):
         # Load the data
+        if self.dataset_type == 0:
+            raise ValueError("Small dataset not available")
+        elif not self.filename.exists():
+            raise ValueError("Specify the dataset dir for medium/large dataset")
 
         # Extract the data
         data = np.load(self.filename, allow_pickle=True)
@@ -27,7 +30,7 @@ class QuarkGluon(BaseDataModule):
         self.x_test, self.y_test = data['x_test'], data['y_test']
 
     def __repr__(self) -> str:
-        return super().__repr__("Quark Gluon")
+        return super().__repr__(f"Quark Gluon {self.dataset_type}")
 
     @staticmethod
     def add_to_argparse(parser):

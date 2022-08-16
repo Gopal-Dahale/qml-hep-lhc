@@ -1,4 +1,3 @@
-from email.policy import default
 from pathlib import Path
 from tqdm import tqdm
 from urllib.request import urlretrieve
@@ -52,6 +51,7 @@ class BaseDataModule():
         self.batch_size = self.args.get("batch_size", 128)
         self.validation_split = self.args.get("validation_split", 0.2)
         self.processed = self.args.get("processed", False)
+        self.dataset_type = self.args.get("dataset_type", 1)
 
         if self.processed:
             self.data_dir = self.processed_data_dir
@@ -83,11 +83,15 @@ class BaseDataModule():
         parser.add_argument("--validation-split",
                             "-val-split",
                             type=float,
-                            default=0.2)
+                            default=0.1)
         parser.add_argument("--processed",
                             "-processed",
                             action="store_true",
                             default=False)
+        parser.add_argument("--dataset-type",
+                            type=int,
+                            default=1,
+                            choices=[0, 1, 2])
         return parser
 
     def config(self):
@@ -112,12 +116,12 @@ class BaseDataModule():
         Split into train, val, test, and set dims and other tasks.
         """
         # Extract percent_samples of data from x_train and x_test
-        self.x_train, self.y_train = extract_samples(self.x_train, self.y_train,
-                                                     self.mapping,
-                                                     self.percent_samples)
-        self.x_test, self.y_test = extract_samples(self.x_test, self.y_test,
-                                                   self.mapping,
-                                                   self.percent_samples)
+        if self.percent_samples != 1.0:
+            self.x_train, self.y_train = extract_samples(
+                self.x_train, self.y_train, self.mapping, self.percent_samples)
+            self.x_test, self.y_test = extract_samples(self.x_test, self.y_test,
+                                                       self.mapping,
+                                                       self.percent_samples)
 
         # Shuffle the data
         self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
