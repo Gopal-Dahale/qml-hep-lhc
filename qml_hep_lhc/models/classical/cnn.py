@@ -1,5 +1,5 @@
 from qml_hep_lhc.models.base_model import BaseModel
-from tensorflow.keras.layers import Conv2D, Dense, MaxPool2D, Dropout, Flatten, Input
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, Input
 from tensorflow.keras import Model
 from qml_hep_lhc.utils import ParseAction
 
@@ -46,17 +46,17 @@ class CNN(BaseModel):
 
         self.fcs.append(Dense(self.num_classes, activation='softmax'))
 
-        self.pooling = MaxPool2D(pool_size=(2, 2))
+        # self.pooling = MaxPool2D(pool_size=(2, 2))
         self.flatten = Flatten()
-        self.dropout = Dropout(0.25)
+        # self.dropout = Dropout(0.25)
 
     def call(self, input_tensor):
         x = input_tensor
         for conv in self.convs:
             x = conv(x)
 
-        x = self.pooling(x)
-        x = self.dropout(x)
+        # x = self.pooling(x)
+        # x = self.dropout(x)
         x = self.flatten(x)
         for fc in self.fcs:
             x = fc(x)
