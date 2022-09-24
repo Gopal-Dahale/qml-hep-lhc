@@ -1,6 +1,5 @@
 from tensorflow import train
 from argparse import ArgumentParser
-from os import path
 from qml_hep_lhc.utils import _import_class
 from callbacks import _setup_callbacks
 
