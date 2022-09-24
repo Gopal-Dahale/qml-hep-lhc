@@ -26,12 +26,12 @@ class QCNNChen(BaseModel):
             kernel_size=3,
             strides=1,
             n_layers=1,
-            padding="same",
+            padding="valid",
             cluster_state=False,
             fm_class=self.fm_class,
             ansatz_class=self.ansatz_class,
             drc=False,
-            name='conv2d_1',
+            name='qconv2d_1',
         )
 
         self.conv2d_2 = QConv2D(
@@ -39,12 +39,12 @@ class QCNNChen(BaseModel):
             kernel_size=2,
             strides=1,
             n_layers=1,
-            padding="same",
+            padding="valid",
             cluster_state=False,
             fm_class=self.fm_class,
             ansatz_class=self.ansatz_class,
             drc=False,
-            name='conv2d_2',
+            name='qconv2d_2',
         )
 
         self.dense1 = Dense(8, activation='relu')

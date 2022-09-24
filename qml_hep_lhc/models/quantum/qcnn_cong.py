@@ -18,25 +18,29 @@ class QCNNCong(BaseModel):
         # Data config
         self.input_dim = data_config["input_dims"]
         kernel_size = (self.input_dim[0], self.input_dim[1])
-        n_layers = 3
+        n_layers = self.args.get("n_layers", 3)
         self.fm_class = "AngleMap"
         self.ansatz_class = "Cong"
 
-        self.conv2d = QConv2D(
+        self.qconv2d = QConv2D(
             filters=1,
             kernel_size=kernel_size,
             strides=1,
             n_layers=n_layers,
-            padding="same",
+            padding="valid",
             cluster_state=False,
             fm_class=self.fm_class,
             ansatz_class=self.ansatz_class,
             drc=False,
-            name='conv2d',
+            name='qconv2d',
         )
 
+        self.flatten = Flatten()
+
     def call(self, input_tensor):
-        return self.conv2d(input_tensor)
+        x = self.qconv2d(input_tensor)
+        x = self.flatten(x)
+        return x
 
     def build_graph(self):
         x = Input(shape=self.input_dim)
@@ -44,4 +48,5 @@ class QCNNCong(BaseModel):
 
     @staticmethod
     def add_to_argparse(parser):
+        parser.add_argument("--n-layers", type=int, default=3)
         return parser
