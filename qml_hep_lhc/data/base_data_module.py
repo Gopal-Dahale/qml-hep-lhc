@@ -91,7 +91,7 @@ class BaseDataModule():
         parser.add_argument("--dataset-type",
                             type=int,
                             default=1,
-                            choices=[0, 1, 2])
+                            choices=[0, 1, 2, 3, 4])
         return parser
 
     def config(self):

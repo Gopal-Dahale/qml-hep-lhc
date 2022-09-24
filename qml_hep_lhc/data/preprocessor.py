@@ -4,7 +4,6 @@ from sklearn.decomposition import PCA
 from numba import njit, prange
 from tensorflow import image
 from tensorflow.keras.utils import to_categorical
-from argparse import Action
 from qml_hep_lhc.utils import ParseAction
 
 
@@ -32,6 +31,7 @@ class DataPreprocessor():
         self._center_crop = self.args.get("center_crop", None)
         self._to_rgb = self.args.get("to_rgb", False)
         self._power_transform = self.args.get("power_transform", False)
+        self._hinge_labels = self.args.get("hinge_labels", False)
 
         if self._is_binary_data:
             self._binary_data = None
@@ -112,6 +112,10 @@ class DataPreprocessor():
         self.output_dims = (len(self.mapping),)
         return y
 
+    def hinge_labels(self, y):
+        print("Hinge labels...")
+        return 2 * y - 1
+
     def binary_data(self, x, y):
         """
         It takes the data and filters it so that only the data that contains binary classes
@@ -126,8 +130,6 @@ class DataPreprocessor():
 
             # Extract binary data
             x, y = binary_filter(d1, d2, x, y)
-            self.mapping = [d1, d2]
-            self.classes = [self.classes[d1], self.classes[d2]]
         return x, y
 
     def pca(self, x_train, x_test, n_components=16):
@@ -238,8 +240,16 @@ class DataPreprocessor():
             x_test = x_test[..., np.newaxis]
 
         if self._binary_data and len(self._binary_data) == 2:
+
+            # Get the binary classes
+            d1 = self._binary_data[0]
+            d2 = self._binary_data[1]
+
             x_train, y_train = self.binary_data(x_train, y_train)
             x_test, y_test = self.binary_data(x_test, y_test)
+
+            self.mapping = [0, 1]
+            self.classes = [self.classes[d1], self.classes[d2]]
 
         if self._to_rgb:
             print("Converting to RGB...")
@@ -269,6 +279,10 @@ class DataPreprocessor():
             x_train, x_test = self.normalize_data(x_train, x_test)
         if self._min_max:
             x_train, x_test = self.min_max_scale(x_train, x_test)
+
+        if self._hinge_labels:
+            y_train = self.hinge_labels(y_train)
+            y_test = self.hinge_labels(y_test)
 
         if self._labels_to_categorical:
             y_train = self.labels_to_categorical(y_train)
@@ -311,6 +325,10 @@ class DataPreprocessor():
                             default=False)
         parser.add_argument("--power-transform",
                             "-pt",
+                            action="store_true",
+                            default=False)
+        parser.add_argument("--hinge-labels",
+                            "-hl",
                             action="store_true",
                             default=False)
         return parser
