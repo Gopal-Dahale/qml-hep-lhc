@@ -10,7 +10,7 @@ class CNN(BaseModel):
         super(CNN, self).__init__(args)
         self.args = vars(args) if args is not None else {}
 
-        # Moel Configuration
+        # Model Configuration
         self.num_conv_layers = self.args.get('num_conv_layers', 1)
         self.conv_dims = self.args.get('conv_dims', [64])
 
