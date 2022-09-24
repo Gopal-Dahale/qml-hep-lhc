@@ -32,9 +32,7 @@ class Chen:
 			The circuit, the symbols, and the observable.
 				"""
         # Observables
-        Z = cirq.PauliString(cirq.Z(qubits[0]))
-        I = cirq.PauliString(cirq.I(qubits[0]))
-        observable = [-0.5 * Z + 0.5 * I]
+        observable = [cirq.Z(qubits[-1])]
 
         n_qubits = len(qubits)
         # Sympy symbols for variational angles

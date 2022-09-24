@@ -49,9 +49,7 @@ class Farhi:
         self.layer_type = 'alt-xz'
 
         # Observables
-        Z = cirq.PauliString(cirq.Z(readout))
-        I = cirq.PauliString(cirq.I(readout))
-        observable = [-0.5 * Z + 0.5 * I]
+        observable = [cirq.Z(qubits[-1])]
 
         # Sympy symbols for variational angles
         var_symbols = sp.symbols(f'θ0:{n_qubits*n_layers}')

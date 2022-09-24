@@ -66,8 +66,8 @@ def cluster_state_circuit(qubits):
     ops = [cirq.H(q) for q in qubits]
     if len(qubits) == 1:
         return ops
-    # ops += [cirq.CZ(q0, q1) for q0, q1 in zip(qubits, qubits[1:])]
-    # ops += ([cirq.CZ(qubits[-1], qubits[0])] if len(qubits) != 2 else [])
+    ops += [cirq.CZ(q0, q1) for q0, q1 in zip(qubits, qubits[1:])]
+    ops += ([cirq.CZ(qubits[-1], qubits[0])] if len(qubits) != 2 else [])
     return ops
 
 

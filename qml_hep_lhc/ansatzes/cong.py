@@ -75,9 +75,7 @@ class Cong:
         """
 
         # Observables
-        Z = cirq.PauliString(cirq.Z(qubits[-1]))
-        I = cirq.PauliString(cirq.I(qubits[-1]))
-        observable = [-0.5 * Z + 0.5 * I]
+        observable = [cirq.Z(qubits[-1])]
 
         # Sympy symbols for variational angles
         n_qubits = len(qubits)
