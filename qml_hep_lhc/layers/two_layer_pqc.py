@@ -53,7 +53,6 @@ class TwoLayerPQC(Layer):
         self.in_symbols = np.asarray(in_symbols).reshape(in_shape)
 
     def build(self, input_shape):
-
         # Define data and variational circuits
         data_circuit = cirq.Circuit()
         var_circuit = cirq.Circuit()
@@ -121,7 +120,6 @@ class TwoLayerPQC(Layer):
             data_circuit + var_circuit, self.observable)
 
     def call(self, input_tensor):
-
         batch_dim = shape(input_tensor)[0]
         x = Flatten()(input_tensor)
         # Pad input tensor to nearest power of 2 in case of amplitude encoding
@@ -158,5 +156,5 @@ class TwoLayerPQC(Layer):
                              self.indices,
                              axis=1,
                              name=self.name + '_joined_vars')
-        return tf.clip_by_value(
-            self.computation_layer([tiled_up_circuits, joined_vars]), 0, 1)
+
+        return self.computation_layer([tiled_up_circuits, joined_vars])

@@ -27,13 +27,11 @@ class NQubitPQC(Layer):
         self.cluster_state = cluster_state
         self.observable = observable
         self.sparse = sparse
-        self.activation = 'tanh'
 
         # Prepare qubits
         self.qubits = cirq.GridQubit.rect(1, self.n_qubits)
 
     def build(self, input_shape):
-
         self.n_inputs = np.prod(input_shape[1:])
 
         # Make n_inputs a multiple of 3 greater than or equal to n_inputs
@@ -61,12 +59,12 @@ class NQubitPQC(Layer):
         in_symbols = sp.symbols(f'w0:{self.num_in_symbols}')
         self.in_symbols = np.asarray(in_symbols).reshape(in_shape)
 
-        var_circuit, _, _, obs = NQubit().build(self.qubits, None,
-                                                self.n_layers, True,
-                                                self.sparse, self.in_symbols)
+        var_circuit, obs = NQubit().build(self.qubits, self.n_layers,
+                                          self.sparse, self.in_symbols)
 
         if self.observable is None:
             self.observable = obs
+
         circuit += var_circuit
 
         self.in_symbols = list(self.in_symbols.flat)
@@ -86,7 +84,6 @@ class NQubitPQC(Layer):
 
         # Align Left
         circuit = cirq.align_left(circuit)
-        print(circuit)
 
         # Define explicit symbol order
         symbols = [str(symb) for symb in self.in_symbols]
@@ -147,11 +144,9 @@ class NQubitPQC(Layer):
                                   name=self.name +
                                   "_tiled_up_inputs_qweights_qbiases")
 
-        tiled_up_inputs = Activation(
-            self.activation)(tiled_up_inputs) * (np.pi / 2)
-
         joined_vars = gather(tiled_up_inputs,
                              self.indices,
                              axis=1,
                              name=self.name + "_joined_vars")
+
         return self.computation_layer([tiled_up_circuits, joined_vars])

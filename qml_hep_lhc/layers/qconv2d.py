@@ -5,6 +5,7 @@ import numpy as np
 from qml_hep_lhc.layers import TwoLayerPQC
 from qml_hep_lhc.layers import NQubitPQC
 import tensorflow as tf
+import warnings
 
 
 class QConv2D(Layer):
@@ -53,6 +54,21 @@ class QConv2D(Layer):
                              f'Received n_layers={n_layers}.')
         self.n_layers = n_layers
 
+        if ansatz_class != 'NQubit':
+            if sparse:
+                warnings.warn(
+                    'Sparse mode is only supported for NQubit ansatz.')
+            if n_qubits:
+                warnings.warn('n_qubits is only used for NQubit ansatz.')
+
+        if ansatz_class == 'NQubit':
+            if fm_class:
+                warnings.warn('fm_class is only used for TwoLayerPQC.')
+            if drc:
+                warnings.warn('drc is only used for TwoLayerPQC.')
+            if ansatz_class:
+                warnings.warn('ansatz_class is only used for TwoLayerPQC.')
+
         self.observable = observable
         self.kernel_size = normalize_tuple(kernel_size, 'kernel_size')
         self.strides = normalize_tuple(strides, 'strides')
@@ -65,12 +81,12 @@ class QConv2D(Layer):
         self.n_qubits = n_qubits
         self.sparse = sparse
 
-        self.len_obs = self.n_qubits * 3
+        if observable is None:
+            self.len_obs = 1
+        else:
+            self.len_obs = len(observable)
 
     def build(self, input_shape):
-
-        self.iters, self.padding_constant = convolution_iters(
-            input_shape[1:3], self.kernel_size, self.strides, self.padding)
         self.n_channels = input_shape[3]
 
         self.conv_pqcs = [[(filter, channel)
@@ -104,21 +120,7 @@ class QConv2D(Layer):
                         self.n_layers, self.drc, name)
 
     def _convolution(self, x, filter, channel):
-        conv_out = self.conv_pqcs[filter][channel](x)
-        return conv_out
-        # s = self.strides
-        # k = self.kernel_size
-
-        # conv_out = []
-        # for i in range(self.iters[0]):
-        #     for j in range(self.iters[1]):
-        #         x = input_tensor[:, i * s[0]:i * s[0] + k[0], j *
-        #                          s[1]:j * s[1] + k[1]]
-        #         conv_out += [self.conv_pqcs[filter][channel](x)]
-
-        # conv_out = Concatenate(axis=1)(conv_out)
-        # conv_out = Reshape((self.iters[0], self.iters[1], 1))(conv_out)
-        # return conv_out
+        return self.conv_pqcs[filter][channel](x)
 
     def call(self, x):
         if len(x.shape) == 4:
@@ -129,7 +131,7 @@ class QConv2D(Layer):
             x,
             ksizes=(1, 1, self.kernel_size[0], self.kernel_size[1], 1),
             strides=(1, 1, self.strides[0], self.strides[1], 1),
-            padding='VALID',
+            padding=self.padding.upper(),
         )
         x = tf.transpose(x, [1, 0, 2, 3, 4])  # CNHWD
         channels, _, h, w, _ = x.shape
@@ -140,7 +142,6 @@ class QConv2D(Layer):
                 self._convolution(x[0, :, :], filter, 0)
                 for filter in range(self.filters)
             ]
-
         else:
             conv_out = [
                 Add()([
@@ -149,27 +150,7 @@ class QConv2D(Layer):
                 ])
                 for filter in range(self.filters)
             ]
-
         conv_out = Concatenate(axis=-1)(conv_out)
         conv_out = tf.reshape(conv_out,
                               [-1, h, w, self.filters, depth * self.len_obs])
         return self.activation(conv_out)
-        # input_tensor = pad(input_tensor, self.padding_constant)
-
-        # if self.n_channels == 1:
-        #     conv_out = [
-        #         self._convolution(input_tensor[:, :, :, 0], filter, 0)
-        #         for filter in range(self.filters)
-        #     ]
-
-        # else:
-        #     conv_out = [
-        #         Add()([
-        #             self._convolution(input_tensor[:, :, :, c], filter, c)
-        #             for c in range(self.n_channels)
-        #         ])
-        #         for filter in range(self.filters)
-        #     ]
-
-        # conv_out = Concatenate(axis=-1)(conv_out)
-        # return self.activation(conv_out)
