@@ -38,7 +38,7 @@ Determining whether an image of a jet particle corresponds to signals or backgro
 The goal of this study is to show the capabilities of QML especially QCNN for classifying the HEP image datasets. QCNN can be completely quantum or can be a hybrid with classical. The aim is to implement both. We will use quantum variational classification instead of the final FC classical layers in the quantum setting. This will give more depth about the quantum power that can be used in the near term future.
 
 
-## How to Use
+## Usage
 
 ### Code Description
 The repository contains [TensorFlow Quantum](https://www.tensorflow.org/quantum) implementation of quantum convolution and classifier with various data encoding schemes and ansatzes including data reuploading. Models in [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html) and [Pennylane](https://pennylane.ai/) are also added as they have significant speed up during the training. Hybrid as well as fully quantum models can be created using the layers implemented. JAX models can be trained on TPUs as well.
@@ -77,7 +77,7 @@ Single channel images of handwritten digits of size 28 x 28 pixels.
 ### Electron Photon Electromagnetic Calorimeter (ECAL)
 
 <p align="middle">
-  <img src="add path" title="Electron Photon" />
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/ep-mean.png" title="Electron Photon" />
   <p>Mean image of Electron and Photon. Mean of energy channel (left). Mean of time channel (right).</p>
 </p>
   
@@ -90,12 +90,12 @@ The dataset contains images electrons and photons captured by the ECAL detector.
 ### Quark-Gluon
 
 <p align="middle">
-  <img src="add path" title="Gluon" /><br>
-  <img src="add path" title="Quark" /><br>
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/gluon-mean.png" title="Gluon" /><br>
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/quark-mean.png" title="Quark" /><br>
   <br>
   <a>Mean image of Gluon (Top) and Quark (Bottom) for all 3 channels (Tracks, ECAL and HCAL respectively) over full dataset.</a>
-  <img src="add path" title="Gluon cropped" /><br>
-  <img src="add path" title="Quark cropped" /><br>
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/gluon-mean-cropped.png" title="Gluon cropped" /><br>
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/quark-mean-cropped.png" title="Quark cropped" /><br>
   <a>Mean of cropped image of Gluon (Top) and Quark (Bottom) for all 3 channels (Tracks, ECAL and HCAL respectively) over full dataset. </a>
 </p>
 
