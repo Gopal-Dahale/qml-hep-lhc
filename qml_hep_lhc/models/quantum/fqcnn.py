@@ -18,39 +18,29 @@ class FQCNN(QCNN):
 
         input_shape = [None] + list(self.input_dim)
 
-        self.qconv2d_1 = QConv2D(
-            filters=1,
-            kernel_size=3,
-            strides=1,
-            n_qubits=self.n_qubits,
-            n_layers=self.n_layers,
-            sparse=self.sparse,
-            padding="same",
-            cluster_state=self.cluster_state,
-            fm_class=self.fm_class,
-            ansatz_class=self.ansatz_class,
-            drc=self.drc,
-            name='qconv2d_1',
-        )
+        self.num_qconv_layers = self.args.get('num_qconv_layers', 1)
+        self.qconv_dims = self.args.get('qconv_dims', [1])
 
-        input_shape = self.qconv2d_1.compute_output_shape(input_shape)
+        assert len(
+            self.qconv_dims
+        ) == self.num_qconv_layers, 'qconv_dims must be a list of length num_qconv_layers'
 
-        self.qconv2d_2 = QConv2D(
-            filters=1,
-            kernel_size=3,
-            strides=1,
-            n_qubits=self.n_qubits,
-            n_layers=self.n_layers,
-            sparse=self.sparse,
-            padding="same",
-            cluster_state=self.cluster_state,
-            fm_class=self.fm_class,
-            ansatz_class=self.ansatz_class,
-            drc=self.drc,
-            name='qconv2d_2',
-        )
-
-        input_shape = self.qconv2d_2.compute_output_shape(input_shape)
+        self.qconvs = []
+        for i, num_filters in enumerate(self.qconv_dims):
+            self.qconvs.append(
+                QConv2D(
+                    filters=1,
+                    kernel_size=3,
+                    strides=1,
+                    n_layers=self.n_layers,
+                    padding="valid",
+                    cluster_state=self.cluster_state,
+                    fm_class=self.fm_class,
+                    ansatz_class=self.ansatz_class,
+                    drc=self.drc,
+                    name=f'qconv2d_{i}',
+                ))
+            input_shape = self.qconvs[-1].compute_output_shape(input_shape)
 
         if self.ansatz_class == 'NQubit':
             self.vqc = NQubitPQC(
@@ -81,8 +71,9 @@ class FQCNN(QCNN):
             )
 
     def call(self, input_tensor):
-        x = self.qconv2d_1(input_tensor)
-        x = self.qconv2d_2(x)
+        x = input_tensor
+        for qconv in self.qconvs:
+            x = qconv(x)
         x = Flatten()(x)
         x = self.vqc(x)
         return x

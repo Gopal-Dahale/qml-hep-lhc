@@ -35,4 +35,10 @@ class QCNN(BaseModel):
         parser.add_argument("--drc", action="store_true", default=False)
         parser.add_argument("--n-qubits", type=int, default=1)
         parser.add_argument("--sparse", action="store_true", default=False)
+        parser.add_argument('--num-conv-layers', type=int, default=1)
+        parser.add_argument('--conv-dims', action=ParseAction, default=[2])
+        parser.add_argument('--num-fc-layers', type=int, default=1)
+        parser.add_argument('--fc-dims', action=ParseAction, default=[128])
+        parser.add_argument('--num-qconv-layers', type=int, default=1)
+        parser.add_argument('--qconv-dims', action=ParseAction, default=[1])
         return parser

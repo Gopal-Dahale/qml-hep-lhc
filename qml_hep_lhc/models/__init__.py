@@ -6,7 +6,6 @@ from .classical.cnn import CNN
 from .classical.mlp import MLP
 
 # Quantum
-from .quantum.qnn import QNN
 from .quantum.qcnn import QCNN
 from .quantum.fqcnn import FQCNN
 from .quantum.qcnn_hybrid import QCNNHybrid

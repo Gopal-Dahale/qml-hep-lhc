@@ -57,19 +57,19 @@ class QCNNSandwich(QCNN):
         self.batch_norm = BatchNormalization()
 
         self.qconvs = []
-        for num_filters in self.qconv_dims:
+        for i, num_filters in enumerate(self.qconv_dims):
             self.qconvs.append(
                 QConv2D(
                     filters=1,
                     kernel_size=3,
-                    strides=2,
+                    strides=1,
                     n_layers=self.n_layers,
                     padding="same",
                     cluster_state=self.cluster_state,
                     fm_class=self.fm_class,
                     ansatz_class=self.ansatz_class,
                     drc=self.drc,
-                    name='qconv2d_1',
+                    name=f'qconv2d_{i}',
                 ))
 
     def call(self, input_tensor):
@@ -92,10 +92,4 @@ class QCNNSandwich(QCNN):
 
     @staticmethod
     def add_to_argparse(parser):
-        parser.add_argument('--num-conv-layers', type=int, default=1)
-        parser.add_argument('--conv-dims', action=ParseAction, default=[2])
-        parser.add_argument('--num-fc-layers', type=int, default=1)
-        parser.add_argument('--fc-dims', action=ParseAction, default=[128])
-        parser.add_argument('--num-qconv-layers', type=int, default=1)
-        parser.add_argument('--qconv-dims', action=ParseAction, default=[1])
         return parser
