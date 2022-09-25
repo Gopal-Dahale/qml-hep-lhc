@@ -27,7 +27,7 @@ class ResnetQ50(QCNN):
         self.flatten = Flatten()
         input_shape = self.flatten.compute_output_shape(input_shape)
 
-        self.droput = Dropout(0.25)
+        self.dropout = Dropout(0.25)
         self.dense1 = Dense(512, activation='relu')
         input_shape = self.dense1.compute_output_shape(input_shape)
 
@@ -54,7 +54,7 @@ class ResnetQ50(QCNN):
     def call(self, input_tensor):
         x = self.base_model(input_tensor)
         x = self.flatten(x)
-        x = self.droput(x)
+        x = self.dropout(x)
         x = self.dense1(x)
         x = self.dense2(x)
         return self.vqc(x)
@@ -62,14 +62,3 @@ class ResnetQ50(QCNN):
     def build_graph(self):
         x = Input(shape=self.input_dim)
         return Model(inputs=[x], outputs=self.call(x), name="ResnetQ50")
-
-    @staticmethod
-    def add_to_argparse(parser):
-        parser.add_argument("--cluster-state",
-                            action="store_true",
-                            default=False)
-        parser.add_argument("--feature-map", "-fm", type=str)
-        parser.add_argument("--ansatz", type=str)
-        parser.add_argument("--n-layers", type=int, default=1)
-        parser.add_argument("--drc", action="store_true", default=False)
-        return parser
