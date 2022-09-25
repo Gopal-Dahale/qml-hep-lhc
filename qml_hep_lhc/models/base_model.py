@@ -5,7 +5,6 @@ from qml_hep_lhc.models.metrics import custom_accuracy, qAUC
 
 
 class BaseModel(Model):
-
     def __init__(self, args=None):
         super().__init__()
         self.args = vars(args) if args is not None else {}
@@ -21,7 +20,9 @@ class BaseModel(Model):
             self.optimizer = getattr(optimizers, 'Adam')(learning_rate=self.lr)
         elif self.args.get('optimizer', 'Adam') == 'Ranger':
             radam = RectifiedAdam(learning_rate=self.lr)
-            self.optimizer = Lookahead(radam, sync_period=6, slow_step_size=0.5)
+            self.optimizer = Lookahead(radam,
+                                       sync_period=6,
+                                       slow_step_size=0.5)
         else:
             self.optimizer = getattr(
                 optimizers, self.args.get('optimizer'))(learning_rate=self.lr)

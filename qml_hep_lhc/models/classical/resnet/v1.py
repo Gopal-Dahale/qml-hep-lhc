@@ -9,7 +9,6 @@ class ResnetV1(BaseModel):
     Resent v1 model. Paper: https://arxiv.org/abs/1512.03385
     This implementation is based on https://www.geeksforgeeks.org/residual-networks-resnet-deep-learning/
     """
-
     def __init__(self, data_config, args=None):
         super(ResnetV1, self).__init__(args)
         self.args = vars(args) if args is not None else {}

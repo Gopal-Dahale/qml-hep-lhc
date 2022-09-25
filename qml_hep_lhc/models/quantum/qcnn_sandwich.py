@@ -10,7 +10,6 @@ class QCNNSandwich(QCNN):
     """
 	General Quantum Convolutional Neural Network
 	"""
-
     def __init__(self, data_config, args=None):
         super(QCNNSandwich, self).__init__(data_config, args)
         self.args = vars(args) if args is not None else {}

@@ -11,8 +11,7 @@ class Farhi:
     “Classification with Quantum Neural Networks on Near Term Processors.” 
     arXiv: Quantum Physics (2018): n. pag.
     """
-
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def _generate_gates(self):

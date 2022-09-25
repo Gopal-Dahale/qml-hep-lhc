@@ -5,7 +5,6 @@ class QCNN(BaseModel):
     """
 	General Quantum Convolutional Neural Network
 	"""
-
     def __init__(self, data_config, args=None):
         super(QCNN, self).__init__(args)
         self.args = vars(args) if args is not None else {}

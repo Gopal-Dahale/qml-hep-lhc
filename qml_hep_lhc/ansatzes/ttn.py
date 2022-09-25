@@ -1,4 +1,3 @@
-from .utils import cnot_entangling_circuit, one_qubit_unitary
 import cirq
 import sympy as sp
 import numpy as np
@@ -9,8 +8,7 @@ class TTN:
     """
 	Ansatz based on
 	"""
-
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def _block(self, qubits, symbols):
@@ -27,7 +25,8 @@ class TTN:
 
         if n_block_qubits % 2 != 0:
             raise ValueError(
-                f"n_block_qubits must be an even integer; got {n_block_qubits}")
+                f"n_block_qubits must be an even integer; got {n_block_qubits}"
+            )
 
         if n_block_qubits < 2:
             raise ValueError(
@@ -62,10 +61,10 @@ class TTN:
                 x + 2**(j - 1) * n_block_qubits // 2 + n_block_qubits // 2 +
                 2**(j - 1) * n_block_qubits // 2 - n_block_qubits // 2,
             )
-        ] for j in range(1, n_layers +
-                         1) for x in range(0, n_qubits -
-                                           n_block_qubits // 2, 2**(j - 1) *
-                                           n_block_qubits)]
+        ] for j in range(1, n_layers + 1)
+                  for x in range(0, n_qubits -
+                                 n_block_qubits // 2, 2**(j - 1) *
+                                 n_block_qubits)]
 
         return layers
 

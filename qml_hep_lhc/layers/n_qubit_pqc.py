@@ -11,7 +11,6 @@ import tensorflow as tf
 
 
 class NQubitPQC(Layer):
-
     def __init__(self,
                  n_qubits,
                  cluster_state=False,
@@ -108,8 +107,8 @@ class NQubitPQC(Layer):
                                    name=self.name + "_tiled_up_circuits")
 
         if self.sparse is False:
-            tiled_up_inputs = tile(x,
-                                   multiples=[1, self.n_layers * self.n_qubits])
+            tiled_up_inputs = tile(
+                x, multiples=[1, self.n_layers * self.n_qubits])
         else:
             tiled_up_inputs = tile(
                 x, multiples=[1, self.n_layers * self.n_qubits * 3])
@@ -117,7 +116,8 @@ class NQubitPQC(Layer):
         # Multiply by weights
         tiled_up_inputs = multiply(tiled_up_inputs,
                                    self.qweights,
-                                   name=self.name + "_tiled_up_inputs_qweights")
+                                   name=self.name +
+                                   "_tiled_up_inputs_qweights")
 
         if self.sparse is False:
             # Add biases

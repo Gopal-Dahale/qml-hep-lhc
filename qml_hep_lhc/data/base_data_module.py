@@ -16,7 +16,6 @@ class BaseDataModule():
     The BaseDataModule class is a base class for all the datasets. It contains the basic functions that
     are common to all the datasets
     """
-
     def __init__(self, args=None) -> None:
         self.args = vars(args) if args is not None else {}
 
@@ -119,7 +118,8 @@ class BaseDataModule():
         if self.percent_samples != 1.0:
             self.x_train, self.y_train = extract_samples(
                 self.x_train, self.y_train, self.mapping, self.percent_samples)
-            self.x_test, self.y_test = extract_samples(self.x_test, self.y_test,
+            self.x_test, self.y_test = extract_samples(self.x_test,
+                                                       self.y_test,
                                                        self.mapping,
                                                        self.percent_samples)
 
@@ -130,8 +130,8 @@ class BaseDataModule():
         # Preprocess the data
         preprocessor = DataPreprocessor(self.args)
         self.x_train, self.y_train, self.x_test, self.y_test = preprocessor.process(
-            self.x_train, self.y_train, self.x_test, self.y_test, self.config(),
-            self.classes)
+            self.x_train, self.y_train, self.x_test, self.y_test,
+            self.config(), self.classes)
 
         # Set the configuration
         self.dims = preprocessor.dims
@@ -212,7 +212,6 @@ class BaseDataModule():
 
 class TqdmUpTo(tqdm):
     """From https://github.com/tqdm/tqdm/blob/master/examples/tqdm_wget.py"""
-
     def update_to(self, blocks=1, bsize=1, tsize=None):
         """
         Parametersy_train
@@ -226,7 +225,8 @@ class TqdmUpTo(tqdm):
         """
         if tsize is not None:
             self.total = tsize  # pylint: disable=attribute-defined-outside-init
-        self.update(blocks * bsize - self.n)  # will also set self.n = b * bsize
+        self.update(blocks * bsize -
+                    self.n)  # will also set self.n = b * bsize
 
 
 def _download_raw_dataset(url, filename):

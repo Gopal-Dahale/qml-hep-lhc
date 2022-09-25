@@ -11,7 +11,6 @@ class DataPreprocessor():
     """
     Data Preprocessing Module
     """
-
     def __init__(self, args=None) -> None:
 
         # Load the data and arguments
@@ -109,7 +108,7 @@ class DataPreprocessor():
         print("Converting labels to categorical...")
 
         y = to_categorical(y, num_classes=len(self.mapping))
-        self.output_dims = (len(self.mapping),)
+        self.output_dims = (len(self.mapping), )
         return y
 
     def hinge_labels(self, y):
@@ -308,7 +307,10 @@ class DataPreprocessor():
                             "-mm",
                             action="store_true",
                             default=False)
-        parser.add_argument("--resize", "-rz", action=ParseAction, default=None)
+        parser.add_argument("--resize",
+                            "-rz",
+                            action=ParseAction,
+                            default=None)
         parser.add_argument("--binary-data",
                             "-bd",
                             action=ParseAction,

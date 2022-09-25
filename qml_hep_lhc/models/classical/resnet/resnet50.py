@@ -6,7 +6,6 @@ import tensorflow as tf
 
 
 class Resnet50(BaseModel):
-
     def __init__(self, data_config, args=None):
         super(Resnet50, self).__init__(args)
         self.args = vars(args) if args is not None else {}

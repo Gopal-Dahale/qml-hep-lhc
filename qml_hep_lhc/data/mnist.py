@@ -7,14 +7,13 @@ class MNIST(BaseDataModule):
     """
     MNIST Data module
     """
-
     def __init__(self, args=None) -> None:
         super().__init__(args)
 
         self.classes = list(range(10))
 
         self.dims = (28, 28, 1)
-        self.output_dims = (1,)
+        self.output_dims = (1, )
         self.mapping = list(range(10))
 
         # Parse args

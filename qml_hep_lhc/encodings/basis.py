@@ -5,7 +5,6 @@ import numpy as np
 
 
 class BasisMap:
-
     def __init__(self):
         super().__init__()
 

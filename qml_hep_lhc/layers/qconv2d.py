@@ -15,7 +15,6 @@ class QConv2D(Layer):
     with the layer input to produce a tensor of outputs. Finally,
     `activation` is applied to the outputs as well.
     """
-
     def __init__(
             self,
             filters=1,
@@ -147,8 +146,7 @@ class QConv2D(Layer):
                 Add()([
                     self._convolution(x[c, :, :], filter, c)
                     for c in range(self.n_channels)
-                ])
-                for filter in range(self.filters)
+                ]) for filter in range(self.filters)
             ]
         conv_out = Concatenate(axis=-1)(conv_out)
         conv_out = tf.reshape(conv_out,

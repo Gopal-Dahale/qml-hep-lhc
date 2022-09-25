@@ -7,12 +7,11 @@ class ElectronPhoton(BaseDataModule):
     """
     Electron Photon Data module
     """
-
     def __init__(self, args=None) -> None:
         super().__init__(args)
 
         self.dims = (32, 32, 1)
-        self.output_dims = (1,)
+        self.output_dims = (1, )
         self.mapping = list(range(2))
 
         self.classes = ['Photon', 'Electron']

@@ -10,7 +10,6 @@ def custom_accuracy(y_true, y_pred):
 
 
 class qAUC(tf.keras.metrics.AUC):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

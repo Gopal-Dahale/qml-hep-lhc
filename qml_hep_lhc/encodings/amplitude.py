@@ -6,7 +6,6 @@ import warnings
 
 
 class AmplitudeMap:
-
     def __init__(self):
         super().__init__()
         warnings.warn(
@@ -35,7 +34,9 @@ class AmplitudeMap:
     def _locate_x(self, curr_j, prev_j, length):
         curr_bin = bin(curr_j)[2:].zfill(length)
         prev_bin = bin(prev_j)[2:].zfill(length)
-        return [i for i, (x, y) in enumerate(zip(curr_bin, prev_bin)) if x != y]
+        return [
+            i for i, (x, y) in enumerate(zip(curr_bin, prev_bin)) if x != y
+        ]
 
     def build(self, qubits, symbols):
         num_in_symbols = len(symbols)

@@ -15,7 +15,7 @@ class Cong:
     Nat. Phys. 15, 1273–1278 (2019). https://doi.org/10.1038/s41567-019-0648-8
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def _quantum_conv_circuit(self, bits, symbols):

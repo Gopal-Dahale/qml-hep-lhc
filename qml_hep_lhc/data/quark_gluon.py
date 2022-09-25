@@ -3,12 +3,11 @@ import numpy as np
 
 
 class QuarkGluon(BaseDataModule):
-
     def __init__(self, args=None) -> None:
         super().__init__(args)
 
         self.dims = (40, 40, 1)
-        self.output_dims = (1,)
+        self.output_dims = (1, )
         self.mapping = list(range(2))
 
         self.classes = ['Quark', 'Gluon']
@@ -22,7 +21,8 @@ class QuarkGluon(BaseDataModule):
         if self.dataset_type == 0:
             raise ValueError("Small dataset not available")
         elif not self.filename.exists():
-            raise ValueError("Specify the dataset dir for medium/large dataset")
+            raise ValueError(
+                "Specify the dataset dir for medium/large dataset")
 
         # Extract the data
         data = np.load(self.filename, allow_pickle=True)

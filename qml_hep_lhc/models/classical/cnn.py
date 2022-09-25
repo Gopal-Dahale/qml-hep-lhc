@@ -5,7 +5,6 @@ from qml_hep_lhc.utils import ParseAction
 
 
 class CNN(BaseModel):
-
     def __init__(self, data_config, args=None):
         super(CNN, self).__init__(args)
         self.args = vars(args) if args is not None else {}

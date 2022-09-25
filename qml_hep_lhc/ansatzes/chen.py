@@ -14,7 +14,7 @@ class Chen:
 	doi:10.1103/PhysRevResearch.4.013231 
 	"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def build(self, qubits, feature_map, n_layers, drc, in_symbols=None):

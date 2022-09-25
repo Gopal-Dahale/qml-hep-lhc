@@ -5,7 +5,6 @@ import numpy as np
 
 
 class AngleMap:
-
     def __init__(self, gate='rx'):
         valid_gates = ['rx', 'ry', 'rz']
         if gate not in valid_gates:

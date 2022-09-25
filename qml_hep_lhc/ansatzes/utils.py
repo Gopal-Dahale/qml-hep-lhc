@@ -49,7 +49,8 @@ def cnot_entangling_circuit(qubits):
     if len(qubits) == 1:
         return []
     cnot_ops = [cirq.CNOT(q0, q1) for q0, q1 in zip(qubits, qubits[1:])]
-    cnot_ops += ([cirq.CNOT(qubits[-1], qubits[0])] if len(qubits) != 2 else [])
+    cnot_ops += ([cirq.CNOT(qubits[-1], qubits[0])]
+                 if len(qubits) != 2 else [])
     return cnot_ops
 
 

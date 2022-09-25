@@ -10,7 +10,6 @@ from qml_hep_lhc.layers import TwoLayerPQC
 
 
 class ResnetQ50(QCNN):
-
     def __init__(self, data_config, args=None):
         super(ResnetQ50, self).__init__(data_config, args)
         self.args = vars(args) if args is not None else {}

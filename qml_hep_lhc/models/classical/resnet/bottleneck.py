@@ -6,7 +6,6 @@ class BottleneckResidual(Layer):
     """
     Bottleneck Residual Layer for Resent model
     """
-
     def __init__(self,
                  num_filters=16,
                  kernel_size=3,

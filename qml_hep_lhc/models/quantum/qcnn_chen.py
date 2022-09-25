@@ -10,7 +10,6 @@ class QCNNChen(BaseModel):
 	Quantum Convolutional Neural Network.
 	This implementation is based on https://arxiv.org/abs/2012.12177
 	"""
-
     def __init__(self, data_config, args=None):
         super(QCNNChen, self).__init__(args)
         self.args = vars(args) if args is not None else {}

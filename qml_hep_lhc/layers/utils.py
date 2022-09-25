@@ -27,7 +27,7 @@ def normalize_tuple(value, name):
                  f'integers. Received: {value}')
 
     if isinstance(value, int):
-        value_tuple = (value,) * 2
+        value_tuple = (value, ) * 2
     else:
         try:
             value_tuple = tuple(value)
@@ -76,8 +76,8 @@ def convolution_iters(input_shape, kernel_size, strides, padding):
     iters = (input_shape - kernel_size) / strides + 1
 
     if padding == 'valid':
-        return (int(iters[0]), int(iters[1])), constant([[0, 0], [0, 0], [0, 0],
-                                                         [0, 0]])
+        return (int(iters[0]), int(iters[1])), constant([[0, 0], [0, 0],
+                                                         [0, 0], [0, 0]])
     elif padding == 'same':
         iters = np.ceil(iters)
         pad_size = (iters - 1) * strides + kernel_size - input_shape
@@ -201,8 +201,8 @@ def resolve_formula(formula, symbols):
         exponent = resolve_formula(formula.args[1], symbols)
         return lambda x: tf.pow(base(x), exponent(x))
 
-    if isinstance(formula, (TrigonometricFunction, InverseTrigonometricFunction,
-                            HyperbolicFunction)):
+    if isinstance(formula, (TrigonometricFunction,
+                            InverseTrigonometricFunction, HyperbolicFunction)):
         ops = tf_ops_map.get(type(formula), None)
         if ops is None:
             raise ValueError("unsupported sympy operation: {}".format(
@@ -271,9 +271,10 @@ def symbols_in_op(op):
             ret |= op.phase_exponent.free_symbols
         return ret
 
-    raise ValueError("Attempted to scan for symbols in circuit with unsupported"
-                     " ops inside. Expected op found in tfq.get_supported_gates"
-                     " but found: ".format(str(op)))
+    raise ValueError(
+        "Attempted to scan for symbols in circuit with unsupported"
+        " ops inside. Expected op found in tfq.get_supported_gates"
+        " but found: ".format(str(op)))
 
 
 def atoi(symbol):

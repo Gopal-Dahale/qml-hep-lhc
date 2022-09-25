@@ -2,8 +2,7 @@ import cirq
 
 
 class NQubit:
-
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def __single_qubit_rot(self, qubit, symbols, sparse):

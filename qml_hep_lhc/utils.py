@@ -19,7 +19,6 @@ def _import_class(module_and_class_name: str) -> type:
 
 
 class ParseAction(Action):
-
     def __call__(self, parser, namespace, values, option_string=None):
         values = list(map(int, values.split()))
         setattr(namespace, self.dest, values)
