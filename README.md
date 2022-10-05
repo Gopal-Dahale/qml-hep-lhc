@@ -300,4 +300,4 @@ In future, I aim to use
 
 ## Contribution Guidelines
 
-If you'd like to contribute to this study, please take a look at our [contribution guidelines](https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/CONTRIBUTING.md).
+If you'd like to contribute to this study, please take a look at our [contribution guidelines](https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/.github/CONTRIBUTING.md).
