@@ -17,6 +17,7 @@ The goal of this study is to show the capabilities of QML especially QCNN for cl
 - [Experiments and Results](#experiments-and-results)
 - [References](#references)
 - [Future work](#future-work)
+- [Contribution Guidelines](#contribution-guidelines)
 
 ## Introduction
 
@@ -296,3 +297,7 @@ In future, I aim to use
 - gradient free methods for training like COBYLA, SPSA etc.
 - quantum contrastive learning.
 - quantum self attention network.
+
+## Contribution Guidelines
+
+If you'd like to contribute to this study, please take a look at our [contribution guidelines](https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/CONTRIBUTING.md).
