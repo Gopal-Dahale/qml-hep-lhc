@@ -11,6 +11,7 @@ import tensorflow as tf
 
 
 class TwoLayerPQC(Layer):
+
     def __init__(self,
                  n_qubits,
                  n_inputs,
@@ -96,7 +97,7 @@ class TwoLayerPQC(Layer):
         data_expr_symbols += data_symbols
 
         if not isinstance(self.feature_map, AmplitudeMap):
-            lmbd_init = tf.ones(shape=(len(data_expr_symbols), ))
+            lmbd_init = tf.ones(shape=(len(data_expr_symbols),))
             self.lmbd = tf.Variable(initial_value=lmbd_init,
                                     dtype="float32",
                                     trainable=True,
