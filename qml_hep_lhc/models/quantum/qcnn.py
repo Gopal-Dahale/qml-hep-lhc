@@ -1,10 +1,12 @@
 from qml_hep_lhc.models.base_model import BaseModel
+from qml_hep_lhc.utils import ParseAction
 
 
 class QCNN(BaseModel):
     """
 	General Quantum Convolutional Neural Network
 	"""
+
     def __init__(self, data_config, args=None):
         super(QCNN, self).__init__(args)
         self.args = vars(args) if args is not None else {}
@@ -37,7 +39,7 @@ class QCNN(BaseModel):
         parser.add_argument('--num-conv-layers', type=int, default=1)
         parser.add_argument('--conv-dims', action=ParseAction, default=[2])
         parser.add_argument('--num-fc-layers', type=int, default=1)
-        parser.add_argument('--fc-dims', action=ParseAction, default=[128])
+        parser.add_argument('--fc-dims', action=ParseAction, default=[8])
         parser.add_argument('--num-qconv-layers', type=int, default=1)
         parser.add_argument('--qconv-dims', action=ParseAction, default=[1])
         return parser
