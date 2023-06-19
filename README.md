@@ -1,6 +1,4 @@
-![quark-mean](https://github.com/Gopal-Dahale/qml-hep-lhc/assets/49199003/4b856b6b-10d7-4e70-91c2-4e5dcd7f706d)<div align="center">
-  
-  # Quantum Convolutional Neural Networks<br>for High-Energy Physics Analysis at the LHC
+# Quantum Convolutional Neural Networks<br>for High-Energy Physics Analysis at the LHC
 
 A Google Summer of Code 2022 Project Repository.<br>
 The goal of this study is to show the capabilities of QML especially QCNN for classifying the HEP image datasets.
