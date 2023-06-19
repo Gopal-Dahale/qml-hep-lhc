@@ -1,4 +1,4 @@
-<div align="center">
+![quark-mean](https://github.com/Gopal-Dahale/qml-hep-lhc/assets/49199003/4b856b6b-10d7-4e70-91c2-4e5dcd7f706d)<div align="center">
   
   # Quantum Convolutional Neural Networks<br>for High-Energy Physics Analysis at the LHC
 
@@ -78,7 +78,7 @@ Single channel images of handwritten digits of size 28 x 28 pixels.
 ### Electron Photon Electromagnetic Calorimeter (ECAL)
 
 <p align="middle">
-  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/ep-mean.png" title="Electron Photon" />
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/assets/49199003/49db8607-50cf-42ef-8811-5b7f541f0e9f" title="Electron Photon" />
   <p>Mean image of Electron and Photon. Mean of energy channel (left). Mean of time channel (right).</p>
 </p>
   
@@ -91,12 +91,12 @@ The dataset contains images electrons and photons captured by the ECAL detector.
 ### Quark-Gluon
 
 <p align="middle">
-  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/gluon-mean.png" title="Gluon" /><br>
-  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/quark-mean.png" title="Quark" /><br>
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/assets/49199003/f94bf12c-59ca-470b-8ef3-e0eb2d062729" title="Gluon" /><br>
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/assets/49199003/73c42d31-3b72-4792-9d4f-a2079ca6cc1e" title="Quark" /><br>
   <br>
   <a>Mean image of Gluon (Top) and Quark (Bottom) for all 3 channels (Tracks, ECAL and HCAL respectively) over full dataset.</a>
-  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/gluon-mean-cropped.png" title="Gluon cropped" /><br>
-  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/blob/main/assets/quark-mean-cropped.png" title="Quark cropped" /><br>
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/assets/49199003/852ee8ce-ab95-4cc4-b000-edb4abb95ea9" title="Gluon cropped" /><br>
+  <img src="https://github.com/Gopal-Dahale/qml-hep-lhc/assets/49199003/62f2658b-5aec-4b0e-9ecb-26a383b4439c" title="Quark cropped" /><br>
   <a>Mean of cropped image of Gluon (Top) and Quark (Bottom) for all 3 channels (Tracks, ECAL and HCAL respectively) over full dataset. </a>
 </p>
 
